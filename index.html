@@ -13,11 +13,13 @@ h1{font-size:24px}h2{font-size:20px;margin-top:28px}
 input,select{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:10px}
 .card{background:white;padding:16px;border-radius:10px;margin-bottom:10px}
 .name{font-size:18px;font-weight:bold}
-.fee{margin:6px 0;color:#2e7d32;font-weight:bold}
+.info{color:#555;font-size:14px;margin:3px 0}
+.fee{margin:8px 0;color:#2e7d32;font-weight:bold}
 .paid{margin:6px 0;color:#2e7d32;font-weight:bold}
 .unpaid{margin:6px 0;color:#e65100;font-weight:bold}
 button{background:#1976d2;color:white;border:none;padding:12px;border-radius:8px;font-size:16px;width:100%}
 .grey{background:#999}.red{background:#c62828;margin-top:8px}
+.wa{background:#25D366;margin-top:8px}
 #form{display:none;background:white;padding:16px;border-radius:10px;margin-bottom:16px}
 .empty{text-align:center;color:#666}
 #sos{position:fixed;bottom:16px;right:16px;width:auto;background:#c62828;border-radius:30px;padding:14px 20px;font-weight:bold;z-index:10}
@@ -28,144 +30,158 @@ button{background:#1976d2;color:white;border:none;padding:12px;border-radius:8px
 </style>
 </head>
 <body>
+<button id="sos" onclick="toggleSos()">🆘 Emergency</button>
+<div id="sosPanel"><div id="sosBox">
+<h2 style="margin-top:0">Emergency</h2>
+<p>Tap a number to call.</p>
+<a class="call" href="tel:999">Emergency: 999</a>
+<a class="call" href="tel:992">Ambulance: 992</a>
+<a class="call" href="tel:991">Police: 991</a>
+<a class="call" href="tel:993">Fire: 993</a>
+<a class="call blue" href="tel:112">Any mobile phone: 112</a>
+<button class="grey" onclick="toggleSos()">Close</button>
+</div></div>
+
 <h1>Find a Doctor</h1>
-<input id="search" placeholder="Search name, specialty or city" />
+<input id="search" autocomplete="off" placeholder="Search name, specialty or city" />
 
 <div id="form">
   <div class="name" id="formTitle"></div>
-    <div class="fee" id="total"></div>
-      <input id="pname" placeholder="Your name" />
-        <input id="phone" type="tel" placeholder="Phone number" />
-          <input id="date" type="date" />
-            <select id="time">
-                <option>09:00</option><option>10:00</option><option>11:00</option>
-                    <option>14:00</option><option>15:00</option><option>16:00</option>
-                      </select>
-                        <select id="method" onchange="toggleMomo()">
-                            <option>MTN MoMo</option>
-                                <option>Airtel Money</option>
-                                    <option>Pay at clinic</option>
-                                      </select>
-                                        <input id="momo" type="tel" placeholder="Mobile money number" />
-                                          <button id="confirmBtn" onclick="confirmBooking()">Confirm booking</button>
-                                            <button class="grey" style="margin-top:8px" onclick="closeForm()">Cancel</button>
-                                            </div>
+  <div class="fee" id="total"></div>
+  <input id="pname" placeholder="Your name" />
+  <input id="phone" type="tel" placeholder="Phone number" />
+  <input id="date" type="date" />
+  <select id="time">
+    <option>09:00</option><option>10:00</option><option>11:00</option>
+    <option>14:00</option><option>15:00</option><option>16:00</option>
+  </select>
+  <select id="method" onchange="toggleMomo()">
+    <option>MTN MoMo</option>
+    <option>Airtel Money</option>
+    <option>Pay at clinic</option>
+  </select>
+  <input id="momo" type="tel" placeholder="Mobile money number" />
+  <button id="confirmBtn" onclick="confirmBooking()">Confirm booking</button>
+  <button class="grey" style="margin-top:8px" onclick="closeForm()">Cancel</button>
+</div>
 
-                                            <div id="list"></div>
+<div id="list"></div>
 
-                                            <h2>My Appointments</h2>
-                                            <div id="appts"></div>
+<h2>My Appointments</h2>
+<div id="appts"></div>
 
-                                            <script>
-                                            const DOCTORS=[
-                                            {name:'Dr. Mwansa Banda',specialty:'General Practitioner',city:'Lusaka',fee:150},
-                                            {name:'Dr. Chanda Phiri',specialty:'Pediatrician',city:'Ndola',fee:250},
-                                            {name:'Dr. Mutale Zulu',specialty:'Dentist',city:'Kitwe',fee:200},
-                                            {name:'Dr. Namukolo Tembo',specialty:'Gynecologist',city:'Lusaka',fee:300},
-                                            {name:'Dr. Bwalya Mulenga',specialty:'Dermatologist',city:'Livingstone',fee:280}
-                                            ];
-                                            let selected=null;
-                                            let appts=[];
-                                            try{appts=JSON.parse(localStorage.getItem('appts'))||[];}catch(e){}
+<script>
+const DOCTORS=[
+{name:'Dr. Mwansa Banda',specialty:'General Practitioner',city:'Lusaka',fee:150,experience:8,languages:'English, Bemba, Nyanja',clinic:'Sample Family Clinic, Kabulonga',wa:''},
+{name:'Dr. Chanda Phiri',specialty:'Pediatrician',city:'Ndola',fee:250,experience:12,languages:'English, Bemba',clinic:'Sample Children Clinic, Northrise',wa:''},
+{name:'Dr. Mutale Zulu',specialty:'Dentist',city:'Kitwe',fee:200,experience:6,languages:'English, Bemba',clinic:'Sample Dental Care, Parklands',wa:''},
+{name:'Dr. Namukolo Tembo',specialty:'Gynecologist',city:'Lusaka',fee:300,experience:15,languages:'English, Tonga, Nyanja',clinic:'Sample Women Clinic, Woodlands',wa:''},
+{name:'Dr. Bwalya Mulenga',specialty:'Dermatologist',city:'Livingstone',fee:280,experience:9,languages:'English, Lozi',clinic:'Sample Skin Clinic, Dambwa',wa:''}
+];
+let selected=null;
+let appts=[];
+try{appts=JSON.parse(localStorage.getItem('appts'))||[];}catch(e){}
 
-                                            function save(){
-                                              try{localStorage.setItem('appts',JSON.stringify(appts));}catch(e){}
-                                              }
+function save(){
+  try{localStorage.setItem('appts',JSON.stringify(appts));}catch(e){}
+}
 
-                                              function showDoctors(){
-                                                const t=document.getElementById('search').value.toLowerCase();
-                                                  const r=DOCTORS.map((d,i)=>({...d,i})).filter(d=>
-                                                      (d.name+d.specialty+d.city).toLowerCase().includes(t));
-                                                        document.getElementById('list').innerHTML=r.length?r.map(d=>
-                                                            '<div class="card"><div class="name">'+d.name+'</div>'+
-                                                                '<div>'+d.specialty+' • '+d.city+'</div>'+
-                                                                    '<div class="fee">K'+d.fee+' per visit</div>'+
-                                                                        '<button onclick="openForm('+d.i+')">Book</button></div>'
-                                                                          ).join(''):'<p class="empty">No doctors found</p>';
-                                                                          }
+function showDoctors(){
+  const t=document.getElementById('search').value.toLowerCase();
+  const r=DOCTORS.map((d,i)=>({...d,i})).filter(d=>
+    (d.name+d.specialty+d.city+d.languages).toLowerCase().includes(t));
+  document.getElementById('list').innerHTML=r.length?r.map(d=>
+    '<div class="card"><div class="name">'+d.name+'</div>'+
+    '<div class="info">'+d.specialty+' • '+d.city+'</div>'+
+    '<div class="info">'+d.experience+' years experience</div>'+
+    '<div class="info">Speaks: '+d.languages+'</div>'+
+    '<div class="info">'+d.clinic+'</div>'+
+    '<div class="fee">K'+d.fee+' per visit</div>'+
+    '<button onclick="openForm('+d.i+')">Book</button>'+
+    (d.wa?'<button class="wa" onclick="whatsapp('+d.i+')">WhatsApp clinic</button>':'')+
+    '</div>'
+  ).join(''):'<p class="empty">No doctors found</p>';
+}
 
-                                                                          function showAppts(){
-                                                                            document.getElementById('appts').innerHTML=appts.length?appts.map((a,i)=>{
-                                                                                let status='';
-                                                                                    if(a.method){
-                                                                                          status=a.paid
-                                                                                                  ?'<div class="paid">Paid K'+a.fee+' via '+a.method+'</div>'
-                                                                                                          :'<div class="unpaid">Pay K'+a.fee+' at clinic</div>';
-                                                                                                              }
-                                                                                                                  return '<div class="card"><div class="name">'+a.doctor+'</div>'+
-                                                                                                                      '<div>'+a.date+' at '+a.time+'</div>'+
-                                                                                                                          '<div>Patient: '+a.patient+' ('+a.phone+')</div>'+
-                                                                                                                              status+
-                                                                                                                                  '<button class="red" onclick="cancelAppt('+i+')">Cancel</button></div>';
-                                                                                                                                    }).join(''):'<p class="empty">No appointments yet</p>';
-                                                                                                                                    }
+function whatsapp(i){
+  const d=DOCTORS[i];
+  const msg='Hello, I would like to book an appointment with '+d.name+'.';
+  window.open('https://wa.me/'+d.wa+'?text='+encodeURIComponent(msg),'_blank');
+}
 
-                                                                                                                                    function toggleMomo(){
-                                                                                                                                      const m=document.getElementById('method').value;
-                                                                                                                                        const isClinic=m==='Pay at clinic';
-                                                                                                                                          document.getElementById('momo').style.display=isClinic?'none':'block';
-                                                                                                                                            document.getElementById('confirmBtn').textContent=isClinic
-                                                                                                                                                ?'Confirm booking'
-                                                                                                                                                    :'Confirm and pay K'+selected.fee;
-                                                                                                                                                    }
+function showAppts(){
+  document.getElementById('appts').innerHTML=appts.length?appts.map((a,i)=>{
+    let status='';
+    if(a.method){
+      status=a.paid
+        ?'<div class="paid">Paid K'+a.fee+' via '+a.method+'</div>'
+        :'<div class="unpaid">Pay K'+a.fee+' at clinic</div>';
+    }
+    return '<div class="card"><div class="name">'+a.doctor+'</div>'+
+    '<div>'+a.date+' at '+a.time+'</div>'+
+    '<div>Patient: '+a.patient+' ('+a.phone+')</div>'+
+    status+
+    '<button class="red" onclick="cancelAppt('+i+')">Cancel</button></div>';
+  }).join(''):'<p class="empty">No appointments yet</p>';
+}
 
-                                                                                                                                                    function openForm(i){
-                                                                                                                                                      selected=DOCTORS[i];
-                                                                                                                                                        document.getElementById('formTitle').textContent='Book '+selected.name;
-                                                                                                                                                          document.getElementById('total').textContent='Fee: K'+selected.fee;
-                                                                                                                                                            document.getElementById('form').style.display='block';
-                                                                                                                                                              toggleMomo();
-                                                                                                                                                                window.scrollTo(0,0);
-                                                                                                                                                                }
+function toggleMomo(){
+  const m=document.getElementById('method').value;
+  const isClinic=m==='Pay at clinic';
+  document.getElementById('momo').style.display=isClinic?'none':'block';
+  document.getElementById('confirmBtn').textContent=isClinic
+    ?'Confirm booking'
+    :'Confirm and pay K'+selected.fee;
+}
 
-                                                                                                                                                                function closeForm(){
-                                                                                                                                                                  document.getElementById('form').style.display='none';
-                                                                                                                                                                  }
+function openForm(i){
+  selected=DOCTORS[i];
+  document.getElementById('formTitle').textContent='Book '+selected.name;
+  document.getElementById('total').textContent='Fee: K'+selected.fee;
+  document.getElementById('form').style.display='block';
+  toggleMomo();
+  window.scrollTo(0,0);
+}
 
-                                                                                                                                                                  function confirmBooking(){
-                                                                                                                                                                    const patient=document.getElementById('pname').value.trim();
-                                                                                                                                                                      const phone=document.getElementById('phone').value.trim();
-                                                                                                                                                                        const date=document.getElementById('date').value;
-                                                                                                                                                                          const time=document.getElementById('time').value;
-                                                                                                                                                                            const method=document.getElementById('method').value;
-                                                                                                                                                                              const momo=document.getElementById('momo').value.trim();
-                                                                                                                                                                                if(!patient||!phone||!date){alert('Please fill in your name, phone and date.');return;}
-                                                                                                                                                                                  let paid=false;
-                                                                                                                                                                                    if(method!=='Pay at clinic'){
-                                                                                                                                                                                        if(!momo){alert('Please enter your mobile money number.');return;}
-                                                                                                                                                                                            const ok=confirm('DEMO: A request for K'+selected.fee+' would be sent to '+momo+' ('+method+'). Approve payment?');
-                                                                                                                                                                                                if(!ok){return;}
-                                                                                                                                                                                                    paid=true;
-                                                                                                                                                                                                      }
-                                                                                                                                                                                                        appts.push({doctor:selected.name,patient,phone,date,time,method,paid,fee:selected.fee});
-                                                                                                                                                                                                          save();showAppts();closeForm();
-                                                                                                                                                                                                            alert('Appointment booked!');
-                                                                                                                                                                                                            }
+function closeForm(){
+  document.getElementById('form').style.display='none';
+}
 
-                                                                                                                                                                                                            function cancelAppt(i){
-                                                                                                                                                                                                              appts.splice(i,1);save();showAppts();
-                                                                                                                                                                                                              }
+function confirmBooking(){
+  const patient=document.getElementById('pname').value.trim();
+  const phone=document.getElementById('phone').value.trim();
+  const date=document.getElementById('date').value;
+  const time=document.getElementById('time').value;
+  const method=document.getElementById('method').value;
+  const momo=document.getElementById('momo').value.trim();
+  if(!patient||!phone||!date){alert('Please fill in your name, phone and date.');return;}
+  let paid=false;
+  if(method!=='Pay at clinic'){
+    if(!momo){alert('Please enter your mobile money number.');return;}
+    const ok=confirm('DEMO: A request for K'+selected.fee+' would be sent to '+momo+' ('+method+'). Approve payment?');
+    if(!ok){return;}
+    paid=true;
+  }
+  appts.push({doctor:selected.name,patient,phone,date,time,method,paid,fee:selected.fee});
+  save();showAppts();closeForm();
+  alert('Appointment booked!');
+}
 
-                                                                                                                                                                                                              document.getElementById('search').addEventListener('input',showDoctors);
-                                                                                                                                                                                                              showDoctors();showAppts();
-                                                                                                                                                                                                             function toggleSos(){
-                                                                                                                                                                                                                 const p=document.getElementById('sosPanel');
-                                                                                                                                                                                                                   p.style.display=p.style.display==='block'?'none':'block';
-                                                                                                                                                                                                                   } 
-                                                                                                                                                                                                              if ('serviceWorker' in navigator) {
-                                                                                                                                                                                                                navigator.serviceWorker.register('/sw.js');
-                                                                                                                                                                                                                }
-                                                                                                                                                                                                                </script>
-                                                                                                                                                                                                                </body>
-                                                                                                                                                                                                                <button id="sos" onclick="toggleSos()">🆘 Emergency</button>
-                                                                                                                                                                                                                <div id="sosPanel"><div id="sosBox">
-                                                                                                                                                                                                                <h2 style="margin-top:0">Emergency</h2>
-                                                                                                                                                                                                                <p>Tap a number to call.</p>
-                                                                                                                                                                                                                <a class="call" href="tel:999">Emergency: 999</a>
-                                                                                                                                                                                                                <a class="call" href="tel:992">Ambulance: 992</a>
-                                                                                                                                                                                                                <a class="call" href="tel:991">Police: 991</a>
-                                                                                                                                                                                                                <a class="call" href="tel:993">Fire: 993</a>
-                                                                                                                                                                                                                <a class="call blue" href="tel:112">Any mobile phone: 112</a>
-                                                                                                                                                                                                                <button class="grey" onclick="toggleSos()">Close</button>
-                                                                                                                                                                                                                </div></div>
-                                                                                                                                                                                                                </html>
+function cancelAppt(i){
+  appts.splice(i,1);save();showAppts();
+}
+
+function toggleSos(){
+  const p=document.getElementById('sosPanel');
+  p.style.display=p.style.display==='block'?'none':'block';
+}
+
+document.getElementById('search').value='';
+document.getElementById('search').addEventListener('input',showDoctors);
+showDoctors();showAppts();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
+</body>
+  </html>
