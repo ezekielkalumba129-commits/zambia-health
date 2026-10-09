@@ -1,7 +1,13 @@
-const CACHE = 'health-v3';
+const CACHE = 'health-v4';
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/', '/manifest.json', '/icon.svg'])));
+  e.waitUntil(
+    caches.open(CACHE).then(c =>
+      Promise.all(['/', '/manifest.json', '/icon.svg'].map(u =>
+        fetch(u, { cache: 'reload' }).then(r => c.put(u, r))
+      ))
+    )
+  );
 });
 self.addEventListener('activate', e => {
   e.waitUntil(
@@ -11,15 +17,21 @@ self.addEventListener('activate', e => {
   );
 });
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const net = fetch(e.request).then(r => {
-        const copy = r.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-        return r;
-      }).catch(() => cached);
-      return cached || net;
-    })
-  );
+  const r = e.request;
+  if (r.method !== 'GET') return;
+  if (r.mode === 'navigate') {
+    e.respondWith(new Promise(res => {
+      const t = setTimeout(() => caches.match('/').then(c => c && res(c)), 3000);
+      fetch(r).then(n => {
+        clearTimeout(t);
+        if (n.ok) { const cp = n.clone(); caches.open(CACHE).then(c => c.put('/', cp)); }
+        res(n);
+      }).catch(() => {
+        clearTimeout(t);
+        caches.match('/').then(c => res(c || Response.error()));
+      });
+    }));
+    return;
+  }
+  e.respondWith(caches.match(r).then(c => c || fetch(r)));
 });
