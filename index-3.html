@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zambia Health</title>
+<link rel="manifest" href="/manifest.json"><link rel="icon" href="/icon.svg"><meta name="theme-color" content="#1976d2">
+<style>
+body{font-family:system-ui,Arial,sans-serif;background:#eef2f5;margin:0;padding:16px 16px 150px;color:#16232e}
+h1{font-size:24px;margin:4px 0 12px}h2{font-size:19px;margin:20px 0 8px}
+input,select{width:100%;padding:12px;border:1px solid #c9d3db;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:10px;background:#fff}
+.card{background:#fff;padding:14px 16px;border-radius:10px;margin-bottom:10px;border:1px solid #dde5ea}
+.name{font-size:18px;font-weight:700}.info{color:#4b5d6b;font-size:14px;margin:3px 0}
+.fee{margin:8px 0;color:#1b7a3d;font-weight:700}.warn{color:#b45309;font-weight:700;margin:6px 0}
+button,.btn{display:block;background:#1976d2;color:#fff;border:0;padding:12px;border-radius:8px;font-size:16px;width:100%;margin-top:8px;text-align:center;text-decoration:none;box-sizing:border-box}
+.g{background:#6b7c8a}.r{background:#c62828}.w{background:#1f9d55}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.empty{text-align:center;color:#6b7c8a}
+section{display:none}#form{display:none}
+#nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid #dde5ea}
+#nav button{flex:1;background:none;color:#4b5d6b;border-radius:0;margin:0;padding:14px 2px;font-size:13px}
+#nav .on{color:#1976d2;font-weight:700;box-shadow:inset 0 3px #1976d2}
+#sos{position:fixed;right:14px;bottom:70px;width:auto;margin:0;background:#c62828;border-radius:28px;padding:13px 18px;font-weight:700;z-index:10}
+#sp2{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:20;padding:16px;overflow:auto}
+#sb{background:#fff;border-radius:12px;padding:16px;margin-top:40px}
+.call{background:#c62828;font-size:18px;padding:14px}
+</style></head><body>
+
+<button id="sos" onclick="sos()">🆘 Emergency</button>
+<div id="sp2"><div id="sb">
+<h2 style="margin-top:0">Emergency</h2>
+<a class="btn call" href="tel:999">Emergency: 999</a>
+<a class="btn call" href="tel:992">Ambulance: 992</a>
+<a class="btn call" href="tel:991">Police: 991</a>
+<a class="btn call" href="tel:993">Fire: 993</a>
+<a class="btn" href="tel:112">Any mobile phone: 112</a>
+<button class="g" onclick="sos()">Close</button>
+</div></div>
+
+<section id="t-docs">
+<h1>Find a Doctor</h1>
+<input id="q" autocomplete="off" placeholder="Search name, specialty or language">
+<div class="row"><select id="sp"></select><select id="ct"></select></div>
+<div id="form" class="card">
+<div class="name" id="ft"></div>
+<input id="pn" placeholder="Your name">
+<input id="ph" type="tel" placeholder="Phone number">
+<input id="dt" type="date">
+<select id="tm"><option>09:00</option><option>10:00</option><option>11:00</option><option>14:00</option><option>15:00</option><option>16:00</option></select>
+<select id="pm" onchange="mm()"><option>MTN MoMo</option><option>Airtel Money</option><option>Pay at clinic</option></select>
+<input id="mo" type="tel" placeholder="Mobile money number">
+<button id="cb" onclick="confirmB()"></button>
+<button class="g" onclick="$('form').style.display='none'">Cancel</button>
+</div>
+<div id="dl"></div>
+</section>
+
+<section id="t-visits"><h1>My Visits</h1><div id="vl"></div></section>
+
+<section id="t-rx"><h1>Pharmacy</h1>
+<p class="info">Sample items and prices. Prescription medicines need a prescription.</p>
+<div id="rl"></div><h2>Cart</h2><div id="cl"></div></section>
+
+<section id="t-hosp"><h1>Hospitals &amp; Clinics</h1>
+<select id="prov" onchange="showH()"><option value="">All provinces</option><option>Central</option><option>Copperbelt</option><option>Eastern</option><option>Luapula</option><option>Lusaka</option><option>Muchinga</option><option>Northern</option><option>North-Western</option><option>Southern</option><option>Western</option></select>
+<input id="dist" autocomplete="off" placeholder="District or town (e.g. Kasama)">
+<button onclick="near()">Search this place on Google Maps</button>
+<div id="hl" style="margin-top:12px"></div></section>
+
+<section id="t-req"><h1>Booking Requests</h1><div id="rq"></div></section>
+
+<section id="t-me"><h1>Me</h1>
+<input id="mn" placeholder="Your name"><input id="mp" type="tel" placeholder="Phone number">
+<select id="role" onchange="roleUI()"><option value="patient">I am a patient</option><option value="doctor">I am a doctor (demo)</option></select>
+<select id="did" onchange="$('mw').value=waMap[this.value]||''"></select>
+<input id="mw" type="tel" placeholder="Your WhatsApp number (e.g. 0977123456)">
+<button onclick="saveMe()">Save</button>
+<button class="r" onclick="clearAll()">Delete all data on this phone</button>
+<p class="info">Demo version: bookings, reviews and the cart are saved only on this phone. Switching to doctor mode shows requests booked on this same phone. Real sharing between phones needs a server.</p>
+</section>
+
+<div id="nav"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const S=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const PHARM_WA='';
+const D=[
+{name:'Dr. Mwansa Banda',spec:'General Practitioner',city:'Lusaka',fee:150,exp:8,lang:'English, Bemba, Nyanja',clinic:'Sample Family Clinic, Kabulonga',wa:''},
+{name:'Dr. Chanda Phiri',spec:'Pediatrician',city:'Ndola',fee:250,exp:12,lang:'English, Bemba',clinic:'Sample Children Clinic, Northrise',wa:''},
+{name:'Dr. Mutale Zulu',spec:'Dentist',city:'Kitwe',fee:200,exp:6,lang:'English, Bemba',clinic:'Sample Dental Care, Parklands',wa:''},
+{name:'Dr. Namukolo Tembo',spec:'Gynecologist',city:'Lusaka',fee:300,exp:15,lang:'English, Tonga, Nyanja',clinic:'Sample Women Clinic, Woodlands',wa:''},
+{name:'Dr. Bwalya Mulenga',spec:'Dermatologist',city:'Livingstone',fee:280,exp:9,lang:'English, Lozi',clinic:'Sample Skin Clinic, Dambwa',wa:''}
+];
+const H=[
+['University Teaching Hospital','Lusaka','Lusaka','Public'],['Levy Mwanawasa University Teaching Hospital','Lusaka','Lusaka','Public'],
+['Ndola Teaching Hospital','Ndola','Copperbelt','Public'],['Kitwe Teaching Hospital','Kitwe','Copperbelt','Public'],
+['Livingstone University Teaching Hospital','Livingstone','Southern','Public'],['Medcross Hospital','Lusaka','Lusaka','Private'],
+['Royal Hospital','Lusaka','Lusaka','Private'],['TMS Medical Services','Lusaka','Lusaka','Private'],
+['Medland Health Services & Hospital','Lusaka','Lusaka','Private'],['Leopards Hill Medical Centre','Lusaka','Lusaka','Private'],
+['New Life Medical Centre','Lusaka','Lusaka','Private'],['CFB Medical Centre','Lusaka','Lusaka','Private'],['MAX Clinic - Matero','Lusaka','Lusaka','Private']
+];
+const CAP={'Central':'Kabwe','Copperbelt':'Ndola','Eastern':'Chipata','Luapula':'Mansa','Lusaka':'Lusaka','Muchinga':'Chinsali','Northern':'Kasama','North-Western':'Solwezi','Southern':'Choma','Western':'Mongu'};
+const RX=[['Paracetamol 500mg (10 tablets)',12],['Oral rehydration salts (sachet)',8],['Antiseptic cream',35],['Plasters (box)',25],['Hand sanitiser',30],['Mosquito repellent',40],['Vitamin C (30 tablets)',60]];
+let waMap=L('wa',{});const wn=i=>waMap[i]||D[i].wa;
+let appts=L('appts2',[]),reviews=L('reviews',{}),cart=L('cart',{}),me=L('me',{name:'',phone:'',did:0,role:'patient'}),sel=0;
+const today=()=>new Date().toISOString().slice(0,10);
+const uniq=a=>[...new Set(a)];
+
+function nav(){
+  const t=me.role=='doctor'?[['req','Requests'],['me','Me']]:[['docs','Doctors'],['visits','Visits'],['rx','Pharmacy'],['hosp','Hospitals'],['me','Me']];
+  $('nav').innerHTML=t.map(x=>'<button id="n-'+x[0]+'" onclick="go(\''+x[0]+'\')">'+x[1]+'</button>').join('');
+}
+function go(t){
+  ['docs','visits','rx','hosp','req','me'].forEach(x=>{$('t-'+x).style.display=x==t?'block':'none';if($('n-'+x))$('n-'+x).className=x==t?'on':''});
+  if(t=='docs')showD();if(t=='visits')showV();if(t=='rx')showRx();if(t=='hosp')showH();if(t=='req')showQ();if(t=='me')fillMe();
+  window.scrollTo(0,0);
+}
+function stars(i){const a=reviews[i]||[];if(!a.length)return 'No reviews yet';return '★ '+(a.reduce((s,x)=>s+x.r,0)/a.length).toFixed(1)+' ('+a.length+' reviews)'}
+
+function showD(){
+  const q=$('q').value.toLowerCase(),sp=$('sp').value,ct=$('ct').value;
+  const r=D.map((d,i)=>({...d,i})).filter(d=>(!sp||d.spec==sp)&&(!ct||d.city==ct)&&(d.name+d.spec+d.city+d.lang).toLowerCase().includes(q));
+  $('dl').innerHTML=r.length?r.map(d=>'<div class="card"><div class="name">'+d.name+'</div><div class="info">'+d.spec+' • '+d.city+'</div><div class="info">'+d.exp+' years • Speaks '+d.lang+'</div><div class="info">'+d.clinic+'</div><div class="info">'+stars(d.i)+'</div><div class="fee">K'+d.fee+' per visit</div><div class="row"><button onclick="book('+d.i+')">Book</button><button class="g" onclick="rv('+d.i+')">Reviews</button></div>'+(wn(d.i)?'<button class="w" onclick="wa('+d.i+')">Consult on WhatsApp</button><div class="info">Opens WhatsApp. The chat happens outside this app.</div>':'')+'<div id="rv'+d.i+'"></div></div>').join(''):'<p class="empty">No doctors match. Clear the search or filters.</p>';
+}
+function wa(i){const d=D[i];const t='Hello '+d.name+', I found you on Zambia Health and would like a consultation.'+(me.name?' My name is '+me.name+'.':'');window.open('https://wa.me/'+wn(i)+'?text='+encodeURIComponent(t),'_blank')}
+function rv(i){
+  const e=$('rv'+i);if(e.innerHTML){e.innerHTML='';return}
+  const a=reviews[i]||[];
+  e.innerHTML=(a.length?a.map(x=>'<div class="info">'+'★'.repeat(x.r)+' '+esc(x.t)+'</div>').join(''):'<div class="info">No reviews yet</div>')+
+  '<select id="rs'+i+'"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select><input id="rt'+i+'" placeholder="Write a review"><button onclick="addRv('+i+')">Post review</button>';
+}
+function addRv(i){
+  if(!appts.some(a=>a.d==i&&a.st=='Done')){alert('You can review a doctor after your visit is marked done.');return}
+  const t=$('rt'+i).value.trim();if(!t){alert('Write a few words first.');return}
+  (reviews[i]=reviews[i]||[]).push({r:+$('rs'+i).value,t:t});S('reviews',reviews);showD();
+}
+function book(i){
+  sel=i;$('ft').textContent='Book '+D[i].name;$('pn').value=me.name;$('ph').value=me.phone;
+  $('dt').min=today();$('form').style.display='block';mm();window.scrollTo(0,0);
+}
+function mm(){
+  const c=$('pm').value=='Pay at clinic';$('mo').style.display=c?'none':'block';
+  $('cb').textContent=c?'Request booking':'Request and pay K'+D[sel].fee;
+}
+function confirmB(){
+  const n=$('pn').value.trim(),p=$('ph').value.trim(),dt=$('dt').value,tm=$('tm').value,m=$('pm').value,mo=$('mo').value.trim();
+  if(!n||!p||!dt){alert('Enter your name, phone and date.');return}
+  if(dt<today()){alert('Pick today or a later date.');return}
+  let paid=false;
+  if(m!='Pay at clinic'){
+    if(!mo){alert('Enter your mobile money number.');return}
+    if(!confirm('DEMO: a request for K'+D[sel].fee+' would go to '+mo+' ('+m+'). Approve?'))return;
+    paid=true;
+  }
+  appts.push({d:sel,doc:D[sel].name,pat:n,ph:p,date:dt,time:tm,m:m,paid:paid,fee:D[sel].fee,st:'Pending'});
+  S('appts2',appts);
+  if(!me.name){me.name=n;me.phone=p;S('me',me)}
+  $('form').style.display='none';alert('Request sent. The doctor will accept or decline it.');go('visits');
+}
+function cal(a){
+  const s=a.date.replace(/-/g,'')+'T'+a.time.replace(':','')+'00';
+  const h=String(+a.time.slice(0,2)+1).padStart(2,'0');
+  const e=a.date.replace(/-/g,'')+'T'+h+a.time.slice(3,5)+'00';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('Doctor: '+a.doc)+'&dates='+s+'/'+e;
+}
+function showV(){
+  const r=appts.map((a,i)=>({...a,i}));
+  $('vl').innerHTML=r.length?r.map(a=>'<div class="card"><div class="name">'+a.doc+'</div><div class="info">'+a.date+' at '+a.time+'</div><div class="info">'+(a.paid?'Paid K'+a.fee+' via '+a.m:'Pay K'+a.fee+' at the clinic')+'</div><div class="'+(a.st=='Pending'?'warn':'info')+'">Status: '+a.st+(a.st=='Declined'?' (choose another time)':'')+'</div>'+(a.st=='Accepted'||a.st=='Pending'?'<a class="btn g" target="_blank" rel="noopener" href="'+cal(a)+'">Add to calendar</a><button class="r" onclick="cancelV('+a.i+')">Cancel visit</button>':'')+'</div>').join(''):'<p class="empty">No visits yet. Go to Doctors and book one.</p>';
+}
+function cancelV(i){if(confirm('Cancel this visit?')){appts.splice(i,1);S('appts2',appts);showV()}}
+
+function showQ(){
+  const id=+me.did||0;
+  const r=appts.map((a,i)=>({...a,i})).filter(a=>a.d==id);
+  $('rq').innerHTML='<p class="info">Showing requests for '+D[id].name+'</p>'+(r.length?r.map(a=>'<div class="card"><div class="name">'+esc(a.pat)+'</div><div class="info">'+a.date+' at '+a.time+'</div><div class="info">'+(a.paid?'Paid K'+a.fee+' via '+a.m:'Pay K'+a.fee+' at the clinic')+'</div><div class="'+(a.st=='Pending'?'warn':'info')+'">Status: '+a.st+'</div><a class="btn g" href="tel:'+esc(a.ph)+'">Call patient</a>'+(a.st=='Pending'?'<div class="row"><button class="w" onclick="st('+a.i+',\'Accepted\')">Accept</button><button class="r" onclick="st('+a.i+',\'Declined\')">Decline</button></div>':'')+(a.st=='Accepted'?'<button onclick="st('+a.i+',\'Done\')">Mark visit done</button>':'')+'</div>').join(''):'<p class="empty">No requests yet.</p>');
+}
+function st(i,s){appts[i].st=s;S('appts2',appts);showQ()}
+
+function showRx(){
+  $('rl').innerHTML=RX.map((x,i)=>'<div class="card"><div class="name">'+x[0]+'</div><div class="fee">K'+x[1]+'</div><button onclick="add('+i+',1)">Add to cart</button></div>').join('');
+  const k=Object.keys(cart).filter(i=>cart[i]>0);let tot=0;
+  $('cl').innerHTML=k.length?k.map(i=>{tot+=RX[i][1]*cart[i];return '<div class="card"><div class="info">'+RX[i][0]+' × '+cart[i]+'</div><div class="row"><button class="g" onclick="add('+i+',-1)">Remove one</button></div></div>'}).join('')+'<div class="fee">Total: K'+tot+'</div><button class="w" onclick="orderWA()">Order on WhatsApp</button>':'<p class="empty">Your cart is empty.</p>';
+}
+function add(i,d){cart[i]=Math.max(0,(cart[i]||0)+d);S('cart',cart);showRx()}
+function orderWA(){
+  if(!PHARM_WA){alert('To receive orders, put your pharmacy WhatsApp number in the code (PHARM_WA).');return}
+  const k=Object.keys(cart).filter(i=>cart[i]>0);
+  const t='Hello, I would like to order:\n'+k.map(i=>RX[i][0]+' x '+cart[i]).join('\n');
+  window.open('https://wa.me/'+PHARM_WA+'?text='+encodeURIComponent(t),'_blank');
+}
+
+function showH(){
+  const p=$('prov').value;const r=H.filter(h=>!p||h[2]==p);
+  $('hl').innerHTML=r.length?r.map(h=>'<div class="card"><div class="name">'+h[0]+'</div><div class="info">'+h[3]+' • '+h[1]+', '+h[2]+' Province</div><a class="btn g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(h[0]+', '+h[1]+', Zambia')+'">Open in Maps</a></div>').join(''):'<p class="empty">None saved for this province yet. Use the search button above.</p>';
+}
+function near(){
+  const p=$('prov').value,d=$('dist').value.trim(),pl=d||(p?CAP[p]:'');
+  if(!pl){alert('Choose a province or type a district or town.');return}
+  window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('hospitals and clinics in '+pl+', '+(p?p+' Province, ':'')+'Zambia'),'_blank');
+}
+
+function fillMe(){$('mn').value=me.name;$('mp').value=me.phone;$('role').value=me.role;$('did').value=me.did;$('mw').value=waMap[me.did]||'';roleUI()}
+function roleUI(){const v=$('role').value=='doctor'?'block':'none';$('did').style.display=v;$('mw').style.display=v}
+function saveMe(){
+  me={name:$('mn').value.trim(),phone:$('mp').value.trim(),role:$('role').value,did:+$('did').value};
+  if(me.role=='doctor'){const x=$('mw').value.replace(/\D/g,'').replace(/^0/,'260');if(x)waMap[me.did]=x;else delete waMap[me.did];S('wa',waMap)}
+  S('me',me);nav();go(me.role=='doctor'?'req':'docs');
+}
+function clearAll(){
+  if(!confirm('Delete bookings, reviews, cart and profile from this phone?'))return;
+  ['appts2','reviews','cart','me','wa'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});location.reload();
+}
+function sos(){const p=$('sp2');p.style.display=p.style.display=='block'?'none':'block'}
+
+$('sp').innerHTML='<option value="">All specialties</option>'+uniq(D.map(d=>d.spec)).map(x=>'<option>'+x+'</option>').join('');
+$('ct').innerHTML='<option value="">All cities</option>'+uniq(D.map(d=>d.city)).map(x=>'<option>'+x+'</option>').join('');
+$('did').innerHTML=D.map((d,i)=>'<option value="'+i+'">'+d.name+'</option>').join('');
+$('q').value='';$('q').addEventListener('input',showD);$('sp').onchange=showD;$('ct').onchange=showD;
+showD();nav();go(me.role=='doctor'?'req':'docs');
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}
+</script>
+</body></html>
