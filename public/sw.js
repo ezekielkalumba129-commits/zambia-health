@@ -1,9 +1,9 @@
-const CACHE = 'health-v4';
+const CACHE = 'health-v5';
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE).then(c =>
-      Promise.all(['/', '/manifest.json', '/icon.svg'].map(u =>
+      Promise.all(['/', '/manifest.json', '/icon.svg', '/icon-192.png', '/icon-512.png'].map(u =>
         fetch(u, { cache: 'reload' }).then(r => c.put(u, r))
       ))
     )
