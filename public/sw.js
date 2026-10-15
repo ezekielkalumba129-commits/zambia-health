@@ -1,4 +1,4 @@
-const CACHE = 'health-v5';
+const CACHE = 'health-v6';
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
@@ -19,7 +19,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET') return;
+  const u = new URL(r.url);
+  if (u.origin !== location.origin) return;
   if (r.mode === 'navigate') {
+    if (u.pathname !== '/' && u.pathname !== '/index.html') return;
     e.respondWith(new Promise(res => {
       const t = setTimeout(() => caches.match('/').then(c => c && res(c)), 3000);
       fetch(r).then(n => {
