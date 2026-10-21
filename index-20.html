@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZedCare</title>
+<link rel="manifest" href="/manifest.json"><link rel="icon" href="/icon.svg"><meta name="theme-color" content="#0B7A75">
+<style>
+body{font-family:system-ui,Arial,sans-serif;background:#eef2f5;margin:0;padding:16px 16px 150px;color:#16232e}
+h1{font-size:24px;margin:4px 0 12px}h2{font-size:19px;margin:20px 0 8px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #c9d3db;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:10px;background:#fff}
+.card{background:#fff;padding:14px 16px;border-radius:10px;margin-bottom:10px;border:1px solid #dde5ea}
+.name{font-size:18px;font-weight:700}.info{color:#4b5d6b;font-size:14px;margin:3px 0}
+.fee{margin:8px 0;color:#1b7a3d;font-weight:700}.warn{color:#b45309;font-weight:700;margin:6px 0}
+button,.btn{display:block;background:#0B7A75;color:#fff;border:0;padding:12px;border-radius:8px;font-size:16px;width:100%;margin-top:8px;text-align:center;text-decoration:none;box-sizing:border-box}
+.g{background:#6b7c8a}.r{background:#c62828}.w{background:#1f9d55}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.empty{text-align:center;color:#6b7c8a}
+section{display:none}#form{display:none}
+#nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid #dde5ea}
+#nav button{flex:1;background:none;color:#4b5d6b;border-radius:0;margin:0;padding:14px 2px;font-size:13px}
+#nav .on{color:#0B7A75;font-weight:700;box-shadow:inset 0 3px #0B7A75}
+#sos{position:fixed;right:14px;bottom:70px;width:auto;margin:0;background:#c62828;border-radius:28px;padding:13px 18px;font-weight:700;z-index:10}
+#sp2{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:20;padding:16px;overflow:auto}
+#sb{background:#fff;border-radius:12px;padding:16px;margin-top:40px}
+.call{background:#c62828;font-size:18px;padding:14px}
+input[type=checkbox]{width:auto;margin:0 6px 0 0}.ck{display:inline-block;margin:4px 12px 4px 0;font-size:14px}
+#rc{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:30;padding:16px;overflow:auto}
+#rcb{background:#fff;border-radius:12px;padding:16px;margin-top:30px}
+@media print{body>*:not(#rc){display:none!important}#rc{position:static;background:none;padding:0}.noprint{display:none}}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
+.chip{flex:none;width:auto;margin:0;padding:8px 14px;border-radius:999px;background:#fff;color:#16232e;border:1px solid #c9d3db;font-size:14px}
+.chip.on{background:#0B7A75;color:#fff;border-color:#0B7A75}
+.vb{display:inline-block;background:#0B7A75;color:#fff;border-radius:50%;width:16px;height:16px;font-size:11px;text-align:center;line-height:16px;margin-left:6px;vertical-align:middle}
+.tag{display:inline-block;font-size:12px;border-radius:999px;padding:2px 8px;margin:2px 4px 2px 0;background:#e6f2f1;color:#0B7A75}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.av{width:64px;height:64px;border-radius:50%;background:#0B7A75;color:#fff;font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.who{display:flex;gap:10px;align-items:center;margin-bottom:6px;cursor:pointer}.avs{width:48px;height:48px;border-radius:50%;object-fit:cover;background:#0B7A75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}.avl{width:96px;height:96px;font-size:32px;margin-bottom:8px}
+#join{position:fixed;top:0;left:0;right:0;bottom:0;background:#eef2f5;z-index:40;padding:20px;overflow:auto}
+</style></head><body>
+
+<button id="sos" onclick="sos()">🆘 Emergency</button>
+<div id="sp2"><div id="sb">
+<h2 style="margin-top:0">Emergency</h2>
+<a class="btn call" href="tel:999">Emergency: 999</a>
+<a class="btn call" href="tel:992">Ambulance: 992</a>
+<a class="btn call" href="tel:991">Police: 991</a>
+<a class="btn call" href="tel:993">Fire: 993</a>
+<a class="btn" href="tel:112">Any mobile phone: 112</a>
+<a class="btn g" id="ec" style="display:none"></a>
+<button class="g" onclick="sos()">Close</button>
+</div></div>
+
+<section id="t-docs">
+<h1>Find a Doctor</h1>
+<input id="q" autocomplete="off" placeholder="Search name, specialty or language">
+<div id="chs" class="chips"></div><div id="chc" class="chips"></div><select id="sp" style="display:none"></select><select id="ct" style="display:none"></select>
+<div id="form" class="card">
+<div class="name" id="ft"></div>
+<select id="bf" onchange="pickFor()"></select>
+<label class="ck"><input type="checkbox" id="sh">Share blood group and allergies with the doctor</label>
+<input id="pn" placeholder="Your name">
+<input id="ph" type="tel" placeholder="Phone number">
+<input id="dt" type="date">
+<select id="tm"></select>
+<select id="pm" onchange="mm()"><option>MTN MoMo</option><option>Airtel Money</option><option>Pay at clinic</option></select>
+<input id="mo" type="tel" placeholder="Mobile money number">
+<button id="cb" onclick="confirmB()"></button>
+<button class="g" onclick="$('form').style.display='none'">Cancel</button>
+</div>
+<div id="dl"></div>
+</section>
+
+<section id="t-prof"><button class="g" onclick="go('docs')">← Back to doctors</button><div id="pr"></div></section>
+<section id="t-vend"><button class="g" onclick="go('rx')">← Back to pharmacy</button><div id="vd"></div></section>
+<section id="t-visits"><h1>My Visits</h1><div id="vl"></div></section>
+
+<section id="t-rx"><h1>Pharmacy</h1>
+<p class="info">Sample items and prices. Prescription medicines need a prescription.</p>
+<select id="vs" onchange="pickV()"></select>
+<button class="g" onclick="locate()">Use my location for distances</button>
+<div id="vp"></div>
+<input id="mq" autocomplete="off" placeholder="Search a medicine to compare prices">
+<select id="mc"></select>
+<div id="rl"></div><h2>Cart</h2><div id="cl"></div>
+<h2>Find a pharmacy</h2>
+<select id="pvp" onchange="showPh()"></select>
+<input id="pdd" autocomplete="off" placeholder="District or town (e.g. Kasama)">
+<button onclick="nearPh()">Search pharmacies on Google Maps</button>
+<div id="phl" style="margin-top:12px"></div></section>
+
+<section id="t-hosp"><h1>Hospitals &amp; Clinics</h1>
+<select id="prov" onchange="showH()"><option value="">All provinces</option><option>Central</option><option>Copperbelt</option><option>Eastern</option><option>Luapula</option><option>Lusaka</option><option>Muchinga</option><option>Northern</option><option>North-Western</option><option>Southern</option><option>Western</option></select>
+<input id="dist" autocomplete="off" placeholder="District or town (e.g. Kasama)">
+<button onclick="near()">Search this place on Google Maps</button>
+<div id="hl" style="margin-top:12px"></div></section>
+
+<section id="t-req"><h1>Booking Requests</h1><div id="pf"></div><div id="st"></div><div id="rq"></div><div id="av"></div></section>
+
+<section id="t-ver"><h1>Doctor verification</h1><p class="info">Demo admin. Check each licence with the Health Professions Council of Zambia before approving.</p><div id="vq"></div></section>
+<section id="t-hp"><h1>Health profile</h1>
+<p class="info">Saved only on this phone. You choose what to share when you book.</p>
+<h2>Emergency contact</h2>
+<input id="en" placeholder="Contact name"><input id="ep" type="tel" placeholder="Contact phone">
+<button onclick="saveEm()">Save contact</button>
+<h2>People</h2><div id="pl"></div>
+<div class="card"><div class="name">Add a person</div>
+<input id="hn" placeholder="Name">
+<select id="hr"><option>Myself</option><option>Child</option><option>Parent</option><option>Spouse</option><option>Other</option></select>
+<select id="hb"><option value="">Blood group (optional)</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+<input id="ha" placeholder="Allergies (optional)"><input id="hc" placeholder="Conditions (optional)">
+<button onclick="addP()">Save person</button></div>
+<button class="g" onclick="go('me')">Back</button></section>
+<section id="t-me"><h1 onclick="tapMe()">Me</h1>
+<input id="mn" placeholder="Your name"><input id="mp" type="tel" placeholder="Phone number">
+<div id="demo" style="display:none">
+<select id="role" onchange="roleUI()"><option value="patient">I am a patient</option><option value="doctor">I am a doctor (demo)</option><option value="admin">I am the admin (demo)</option></select>
+<select id="did" onchange="$('mw').value=waMap[this.value]||''"></select>
+<input id="mw" type="tel" placeholder="Your WhatsApp number (e.g. 0977123456)">
+<button class="g" onclick="hideDemo()">Hide demo tools</button></div>
+<button onclick="saveMe()">Save</button>
+<button class="g" onclick="go('hp')">Health profile &amp; family</button>
+<button class="g" onclick="switchRole()">Change who I am</button>
+<button class="r" onclick="clearAll()">Delete all data on this phone</button>
+<p class="info">Your bookings, health profile and cart are saved only on this phone. Nobody else can see them in this version.</p>
+</section>
+
+<div id="rc"><div id="rcb"></div></div>
+<div id="join" style="display:none"><h1>Welcome to ZedCare</h1><p class="info">Who are you?</p>
+<button onclick="joinAs('patient')">I am a patient</button>
+<button class="g" onclick="joinAs('pro')">I am a health professional</button>
+<button class="g" onclick="joinAs('pharmacy')">I am a pharmacy</button>
+<button class="g" onclick="joinAs('hospital')">I am a hospital</button>
+<div id="jmsg"></div></div>
+<div id="nav"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const S=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const PHARM_WA='';
+const D=[
+{name:'Dr. Mwansa Banda',spec:'General Practitioner',city:'Lusaka',fee:150,yrs:8,lang:'English, Bemba, Nyanja',clinic:'Sample Family Clinic, Kabulonga',wa:'',place:'University Teaching Hospital, Lusaka',kind:'Working',lic:'SAMPLE-001',exp:'2027-03-31',status:'Verified',bio:'General practitioner focused on family and community health.',edu:'MBChB (sample)'},
+{name:'Dr. Chanda Phiri',spec:'Pediatrician',city:'Ndola',fee:250,yrs:12,lang:'English, Bemba',clinic:'Sample Children Clinic, Northrise',wa:'',place:'Ndola Teaching Hospital',kind:'Working',lic:'SAMPLE-002',exp:'2027-06-30',status:'Verified',bio:'Pediatrician caring for babies, children and teenagers.',edu:'MBChB, Pediatrics training (sample)'},
+{name:'Dr. Mutale Zulu',spec:'Dentist',city:'Kitwe',fee:200,yrs:6,lang:'English, Bemba',clinic:'Sample Dental Care, Parklands',wa:'',place:'Kitwe Teaching Hospital',kind:'Intern',lic:'SAMPLE-003',exp:'2027-01-31',status:'Verified',bio:'Dentist covering check-ups, fillings and gum care.',edu:'BDS (sample)'},
+{name:'Dr. Namukolo Tembo',spec:'Gynecologist',city:'Lusaka',fee:300,yrs:15,lang:'English, Tonga, Nyanja',clinic:'Sample Women Clinic, Woodlands',wa:'',place:'Levy Mwanawasa University Teaching Hospital',kind:'Volunteer',lic:'SAMPLE-004',exp:'2027-09-30',status:'Verified',bio:'Gynecologist for women and pregnancy care.',edu:'MBChB, Obstetrics and Gynecology training (sample)'},
+{name:'Dr. Bwalya Mulenga',spec:'Dermatologist',city:'Livingstone',fee:280,yrs:9,lang:'English, Lozi',clinic:'Sample Skin Clinic, Dambwa',wa:'',place:'Livingstone University Teaching Hospital',kind:'Working',lic:'SAMPLE-005',exp:'2025-12-31',status:'Verified',bio:'Dermatologist for skin, hair and nail conditions.',edu:'MBChB, Dermatology training (sample)'}
+];
+const H=[
+['University Teaching Hospital','Lusaka','Lusaka','Public'],['Levy Mwanawasa University Teaching Hospital','Lusaka','Lusaka','Public'],
+['Ndola Teaching Hospital','Ndola','Copperbelt','Public'],['Kitwe Teaching Hospital','Kitwe','Copperbelt','Public'],
+['Livingstone University Teaching Hospital','Livingstone','Southern','Public'],['Medcross Hospital','Lusaka','Lusaka','Private'],
+['Royal Hospital','Lusaka','Lusaka','Private'],['TMS Medical Services','Lusaka','Lusaka','Private'],
+['Medland Health Services & Hospital','Lusaka','Lusaka','Private'],['Leopards Hill Medical Centre','Lusaka','Lusaka','Private'],
+['New Life Medical Centre','Lusaka','Lusaka','Private'],['CFB Medical Centre','Lusaka','Lusaka','Private'],['MAX Clinic - Matero','Lusaka','Lusaka','Private']
+];
+const CAP={'Central':'Kabwe','Copperbelt':'Ndola','Eastern':'Chipata','Luapula':'Mansa','Lusaka':'Lusaka','Muchinga':'Chinsali','Northern':'Kasama','North-Western':'Solwezi','Southern':'Choma','Western':'Mongu'};
+const RX=[['Paracetamol 500mg (10 tablets)',12,'Pain & fever'],['Oral rehydration salts (sachet)',8,'Stomach & hydration'],['Antiseptic cream',35,'First aid'],['Plasters (box)',25,'First aid'],['Hand sanitiser',30,'Hygiene'],['Mosquito repellent',40,'Prevention'],['Vitamin C (30 tablets)',60,'Vitamins'],['Antiseptic liquid',28,'First aid'],['Bandage roll',15,'First aid'],['Face masks (box of 50)',45,'Hygiene'],['Digital thermometer',70,'Devices'],['Antibacterial soap',18,'Hygiene'],['Sample restricted item (needs prescription)',80,'Prescription (demo)',1]];
+const VENDORS=[
+{n:'Sample Pharmacy A',city:'Lusaka',prov:'Lusaka',lat:-15.416,lng:28.283,hours:'Mon-Fri 08:00-17:00, Sat 08:00-13:00',lic:'SAMPLE-ZAMRA-001',addr:'Sample Road, Lusaka',wa:''},
+{n:'Sample Pharmacy B',city:'Ndola',prov:'Copperbelt',lat:-12.968,lng:28.636,hours:'Daily 07:30-20:30',lic:'SAMPLE-ZAMRA-002',addr:'Sample Avenue, Ndola',wa:''},
+{n:'Sample Pharmacy C',city:'Kitwe',prov:'Copperbelt',lat:-12.82,lng:28.21,hours:'Open 24 hours',lic:'SAMPLE-ZAMRA-003',addr:'Sample Street, Kitwe',wa:''}
+];
+const PHARMS=[
+{n:'Lusaka Chemist Ltd (Main branch)',city:'Lusaka',prov:'Lusaka',phone:'',wa:''},{n:'Lusaka Pharmacy',city:'Lusaka',prov:'Lusaka',phone:'',wa:''},
+{n:'Westgate Pharmacy',city:'Lusaka',prov:'Lusaka',phone:'',wa:''},{n:'Cairo Chemist',city:'Lusaka',prov:'Lusaka',phone:'',wa:''},
+{n:'ADS Pharmacy Ltd',city:'Ndola',prov:'Copperbelt',phone:'',wa:''},{n:'Good Leaf Pharmacy',city:'Ndola',prov:'Copperbelt',phone:'',wa:''},
+{n:'Bantu Pharmacy',city:'Kitwe',prov:'Copperbelt',phone:'',wa:''},{n:'Rokana Chemists',city:'Kitwe',prov:'Copperbelt',phone:'',wa:''}
+];
+let waMap=L('wa',{});const wn=i=>waMap[i]||D[i].wa;
+let appts=L('appts2',[]),reviews=L('reviews',{}),cart=L('cart',{}),me=L('me',{name:'',phone:'',did:0,role:'patient'}),sel=0;
+const today=()=>fmt(new Date());
+const uniq=a=>[...new Set(a)];
+
+let people=L('people',[]),emerg=L('emerg',{n:'',p:''}),avail=L('avail',{});
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],ALLT=['09:00','10:00','11:00','14:00','15:00','16:00'];
+const getAv=i=>avail[i]||{d:[1,2,3,4,5],t:ALLT};
+function showHp(){
+  $('en').value=emerg.n;$('ep').value=emerg.p;
+  $('pl').innerHTML=people.length?people.map((x,i)=>'<div class="card"><div class="name">'+esc(x.n)+'</div><div class="info">'+esc(x.r)+(x.b?' • Blood group '+esc(x.b):'')+'</div>'+(x.a?'<div class="info">Allergies: '+esc(x.a)+'</div>':'')+(x.c?'<div class="info">Conditions: '+esc(x.c)+'</div>':'')+'<button class="r" onclick="delP('+i+')">Remove</button></div>').join(''):'<p class="empty">No one added yet.</p>';
+}
+function addP(){
+  const n=$('hn').value.trim();if(!n){alert('Enter a name.');return}
+  people.push({n:n,r:$('hr').value,b:$('hb').value,a:$('ha').value.trim(),c:$('hc').value.trim()});
+  S('people',people);['hn','ha','hc'].forEach(k=>$(k).value='');$('hb').value='';showHp();
+}
+function delP(i){if(confirm('Remove this person?')){people.splice(i,1);S('people',people);showHp()}}
+function saveEm(){emerg={n:$('en').value.trim(),p:$('ep').value.trim()};S('emerg',emerg);alert('Saved.')}
+function pickFor(){const v=$('bf').value;$('pn').value=v===''?me.name:people[+v].n}
+function slots(i,dt){
+  if(!dt||!ok(D[i]))return [];const a=getAv(i);
+  if(!a.d.includes(new Date(dt+'T00:00').getDay()))return [];
+  return a.t.filter(t=>!appts.some(x=>x.d==i&&x.date==dt&&x.time==t&&(x.st=='Pending'||x.st=='Accepted')));
+}
+function fillTm(){
+  const s=slots(sel,$('dt').value);
+  $('tm').innerHTML=s.length?s.map(t=>'<option>'+t+'</option>').join(''):'<option value="">'+($('dt').value?'No free times that day':'Pick a date first')+'</option>';
+}
+function showAv(){
+  const id=+me.did||0,a=getAv(id);
+  $('av').innerHTML='<h2>My availability</h2><div class="card"><div class="info">Days</div>'+DAYS.map((x,i)=>'<label class="ck"><input type="checkbox" class="avd" value="'+i+'"'+(a.d.includes(i)?' checked':'')+'>'+x+'</label>').join('')+'<div class="info">Times</div>'+ALLT.map(x=>'<label class="ck"><input type="checkbox" class="avt" value="'+x+'"'+(a.t.includes(x)?' checked':'')+'>'+x+'</label>').join('')+'<button onclick="saveAv()">Save availability</button></div>';
+}
+function saveAv(){
+  const id=+me.did||0;
+  avail[id]={d:[...document.querySelectorAll('.avd:checked')].map(x=>+x.value),t:[...document.querySelectorAll('.avt:checked')].map(x=>x.value)};
+  S('avail',avail);alert('Availability saved.');
+}
+function showSt(id){
+  const r=appts.filter(a=>a.d==id),c=s=>r.filter(a=>a.st==s).length,seen={};
+  r.forEach(a=>{const k=(a.pat+'|'+a.ph).toLowerCase();seen[k]=(seen[k]||0)+1});
+  const rep=Object.values(seen).filter(n=>n>1).length;
+  const inc=r.filter(a=>a.st=='Done').reduce((t,a)=>t+a.fee,0);
+  $('st').innerHTML='<div class="card"><div class="name">Summary</div><div class="info">Requests: '+r.length+' • Pending: '+c('Pending')+' • Accepted: '+c('Accepted')+'</div><div class="info">Done: '+c('Done')+' • Declined: '+c('Declined')+'</div><div class="info">Repeat patients: '+rep+'</div><div class="fee">Income from completed visits: K'+inc+'</div></div>';
+}
+function rcpt(i){
+  const a=appts[i],no='ZH-'+(a.id||String(i+1));
+  $('rcb').innerHTML='<div class="name">ZedCare receipt</div><div class="info">Receipt no. '+esc(no)+'</div><hr><div class="info">Doctor: '+esc(a.doc)+'</div><div class="info">Patient: '+esc(a.pat)+'</div><div class="info">Visit: '+a.date+' at '+a.time+'</div><div class="info">Payment: '+(a.paid?'Paid via '+esc(a.m):'To be paid at the clinic')+'</div><div class="fee">Amount: K'+a.fee+'</div><div class="info">Demo receipt. Not a tax invoice.</div><div class="noprint"><button onclick="window.print()">Print or save as PDF</button><button class="g" onclick="$(\'rc\').style.display=\'none\'">Close</button></div>';
+  $('rc').style.display='block';
+}
+const DOCS3=['Licence or registration certificate','National ID','Letter from the hospital'];
+D.forEach(d=>{d.docs=d.docs||DOCS3});
+let prof=L('prof',{});Object.keys(prof).forEach(i=>Object.assign(D[i],prof[i]));
+const ok=d=>d.status=='Verified'&&!!d.exp&&d.exp>=today();
+const dleft=d=>Math.ceil((new Date(d.exp+'T00:00')-new Date(today()+'T00:00'))/864e5);
+function saveProf(i){const d=D[i];prof[i]=Object.assign({},prof[i]||{},{place:d.place,kind:d.kind,lic:d.lic,exp:d.exp,status:d.status,docs:d.docs});['bio','edu','photo','ach'].forEach(k=>{if(d[k]!==undefined)prof[i][k]=d[k]});S('prof',prof)}
+function showPf(){
+  const id=+me.did||0,d=D[id];let w='';
+  if(!d.exp)w='Add your licence details.';
+  else if(d.exp<today())w='Your licence expired on '+d.exp+'. Patients cannot see or book you until you renew and are approved again.';
+  else if(dleft(d)<=30)w='Your licence expires in '+dleft(d)+' days. Renew it and update your details.';
+  $('pf').innerHTML='<h2>My professional details</h2><div class="card">'+(w?'<div class="warn">'+w+'</div>':'')+'<div class="info">Status: '+d.status+(d.status=='Verified'&&!ok(d)?' (licence expired)':'')+'</div><input id="pw" placeholder="Hospital or clinic where you work, intern or volunteer" value="'+esc(d.place||'')+'"><select id="pk"><option>Working</option><option>Intern</option><option>Volunteer</option></select><input id="pl" placeholder="Licence or registration number" value="'+esc(d.lic||'')+'"><div class="info">Licence or registration expiry date</div><input id="pe" type="date" value="'+(d.exp||'')+'"><div class="info">Documents you will send to the admin</div>'+DOCS3.map(x=>'<label class="ck"><input type="checkbox" class="pdc" value="'+x+'">'+x+'</label>').join('<br>')+'<button onclick="submitPf()">Submit for verification</button><div class="info">Real document uploads need the shared database. For now the admin checks them outside the app.</div></div>'+aboutCard(d);
+  $('pk').value=d.kind||'Working';
+}
+function submitPf(){
+  const id=+me.did||0,d=D[id],place=$('pw').value.trim(),lic=$('pl').value.trim(),exp=$('pe').value;
+  const docs=[...document.querySelectorAll('.pdc:checked')].map(x=>x.value);
+  if(!place||!lic||!exp){alert('Fill in your workplace, licence number and expiry date.');return}
+  if(exp<today()){alert('That licence has already expired. Renew it first.');return}
+  if(docs.length<3){alert('Tick all three documents to confirm you will send them.');return}
+  Object.assign(d,{place:place,kind:$('pk').value,lic:lic,exp:exp,docs:docs,status:'Pending'});saveProf(id);
+  alert('Submitted. You will show to patients after the admin approves.');showPf();
+}
+function showVer(){
+  $('vq').innerHTML=D.map((d,i)=>'<div class="card"><div class="name">'+d.name+'</div><div class="info">Works at: '+esc(d.place)+' ('+d.kind+')</div><div class="info">Licence '+esc(d.lic||'-')+' • expires '+(d.exp||'-')+'</div><div class="info">Documents ticked: '+(d.docs||[]).length+' of 3</div><div class="'+(d.status=='Pending'?'warn':'info')+'">Status: '+d.status+(d.status=='Verified'&&!ok(d)?' (expired, hidden from patients)':'')+'</div>'+(d.status=='Pending'?'<div class="row"><button class="w" onclick="setSt('+i+',\'Verified\')">Approve</button><button class="r" onclick="setSt('+i+',\'Rejected\')">Reject</button></div>':'')+(d.status=='Verified'?'<button class="r" onclick="setSt('+i+',\'Suspended\')">Suspend</button>':'')+'</div>').join('');
+}
+function setSt(i,v){D[i].status=v;saveProf(i);showVer()}
+const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const dstr=n=>{const d=new Date();d.setDate(d.getDate()+n);return fmt(d)};
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const nowHM=()=>{const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')};
+let fsp='',fct='',curP=0,pday=0;
+function chips(){
+  const a=D.filter(ok),mk=(arr,cur,fn)=>'<button class="chip'+(cur===''?' on':'')+'" onclick="'+fn+'(\'\')">All</button>'+arr.map(x=>'<button class="chip'+(cur===x?' on':'')+'" onclick="'+fn+'(\''+x+'\')">'+esc(x)+'</button>').join('');
+  $('chs').innerHTML=mk(uniq(a.map(d=>d.spec)),fsp,'setSp');
+  $('chc').innerHTML=mk(uniq(a.map(d=>d.city)),fct,'setCt');
+}
+function setSp(v){fsp=v;chips();showD()}
+function setCt(v){fct=v;chips();showD()}
+function nextSlot(i){
+  for(let n=0;n<14;n++){const ds=dstr(n);let s=slots(i,ds);if(n==0)s=s.filter(t=>t>nowHM());if(s.length)return{n:n,d:ds,t:s[0]}}
+  return null;
+}
+function when(x){const d=new Date(x.d+'T00:00');return(x.n==0?'Today':x.n==1?'Tomorrow':WD[d.getDay()]+' '+d.getDate())+' at '+x.t}
+function avBadge(i){
+  const x=nextSlot(i);
+  if(!x)return '<div class="info"><span class="dot" style="background:#9aa8b4"></span>No free slots in the next 2 weeks</div>';
+  return x.n==0?'<div class="info"><span class="dot" style="background:#1f9d55"></span><b>Available today</b> • next slot '+x.t+'</div>':'<div class="info"><span class="dot" style="background:#e69a00"></span>Next slot: '+when(x)+'</div>';
+}
+function tags(i){return '<span class="tag">In-clinic visit</span>'+(wn(i)?'<span class="tag">WhatsApp chat</span>':'')}
+function ratingTxt(i){const a=reviews[i]||[];return a.length?'★ '+(a.reduce((t,x)=>t+x.r,0)/a.length).toFixed(1)+' ('+a.length+')':'☆ No reviews yet'}
+function showD(){
+  const q=$('q').value.toLowerCase();
+  const r=D.map((d,i)=>({...d,i})).filter(d=>ok(d)&&(!fsp||d.spec==fsp)&&(!fct||d.city==fct)&&(d.name+d.spec+d.city+d.lang).toLowerCase().includes(q));
+  $('dl').innerHTML=r.length?r.map(d=>'<div class="card"><div class="who" onclick="openProf('+d.i+')">'+avS(d)+'<div><div class="name">'+d.name+'<span class="vb">✓</span></div><div class="info">'+ratingTxt(d.i)+'</div></div></div><div class="info">'+d.spec+' • '+d.city+'</div><div>'+tags(d.i)+'</div>'+avBadge(d.i)+'<div class="info">'+d.yrs+' years • Speaks '+d.lang+'</div><div class="info">Works at: '+esc(d.place)+' ('+d.kind+')</div><div class="fee">K'+d.fee+' per visit</div><div class="row"><button onclick="book('+d.i+')">Book</button><button class="g" onclick="rv('+d.i+')">'+ratingTxt(d.i)+'</button></div>'+(wn(d.i)?'<button class="w" onclick="wa('+d.i+')">Consult on WhatsApp</button>':'')+'<button class="g" onclick="openProf('+d.i+')">View profile and pick a time</button><div id="rv'+d.i+'"></div></div>').join(''):'<p class="empty">No doctors match. Clear the search or filters.</p>';
+}
+function openProf(i){curP=i;pday=0;go('prof');showProf()}
+function pickDay(n){pday=n;showProf()}
+function bookAt(i,ds,t){go('docs');book(i);$('dt').value=ds;fillTm();$('tm').value=t}
+function showProf(){
+  const i=curP,d=D[i],rs=reviews[i]||[],ds=dstr(pday);
+  let s=slots(i,ds);if(pday==0)s=s.filter(t=>t>nowHM());
+  const days=[0,1,2,3,4,5,6].map(n=>{const dd=new Date(dstr(n)+'T00:00');return '<button class="chip'+(n==pday?' on':'')+'" onclick="pickDay('+n+')">'+(n==0?'Today':n==1?'Tomorrow':WD[dd.getDay()]+' '+dd.getDate())+'</button>'}).join('');
+  const grp=(lab,f)=>{const x=s.filter(f);return x.length?'<div class="info">'+lab+'</div><div class="chips">'+x.map(t=>'<button class="chip" onclick="bookAt('+i+',\''+ds+'\',\''+t+'\')">'+t+'</button>').join('')+'</div>':''};
+  const ini=d.name.replace('Dr. ','').split(' ').map(x=>x[0]).join('').slice(0,2);
+  $('pr').innerHTML='<div class="card">'+avL(d)+'<div class="name">'+d.name+'<span class="vb">✓</span></div><div class="info">'+statusLbl(d)+'</div><div class="info">'+d.spec+' • '+d.city+'</div><div>'+tags(i)+'</div><div class="info">'+ratingTxt(i)+'</div><div class="fee">K'+d.fee+' per visit</div></div>'
+   +'<div class="card"><div class="name">About</div><div class="info">'+esc(d.bio||'')+'</div><div class="info">Education: '+esc(d.edu||'')+'</div>'+achHtml(d)+'<div class="info">'+d.yrs+' years • Speaks '+d.lang+'</div><div class="info">Licence verified, valid until '+d.exp2+'</div></div>'.replace('d.exp2','')
+   +'<div class="card"><div class="name">Where to find them</div><div class="info">Works at: '+esc(d.place)+' ('+d.kind+')</div><div class="info">'+esc(d.clinic)+'</div><a class="btn g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(d.place+', '+d.city+', Zambia')+'">Open in Maps</a></div>'
+   +'<div class="card"><div class="name">Pick a time</div><div class="chips">'+days+'</div>'+(grp('Morning',t=>t<'12:00')+grp('Afternoon',t=>t>='12:00')||'<p class="empty">No free times this day. Try another day.</p>')+'</div>'
+   +'<div class="card"><div class="name">Patient reviews</div>'+(rs.length?rs.map(x=>'<div class="info">'+'★'.repeat(x.r)+' '+esc(x.t)+'</div>').join(''):'<div class="info">No reviews yet.</div>')+'</div>'
+   +(wn(i)?'<button class="w" onclick="wa('+i+')">Consult on WhatsApp</button>':'')+'<div class="info">Sample profile. Real doctors would add their own details and photo.</div>';
+}
+let meTaps=0;
+function tapMe(){
+  meTaps++;if(meTaps<7)return;meTaps=0;
+  const c=prompt('Demo code');
+  if(c==='zedcare-demo'){S('demo',1);$('demo').style.display='block';alert('Demo tools are on. They are for testing only.')}
+}
+function hideDemo(){
+  try{localStorage.removeItem('demo')}catch(e){}
+  me.role='patient';S('me',me);$('role').value='patient';$('demo').style.display='none';nav();go('docs');
+}
+const inis=d=>d.name.replace('Dr. ','').split(' ').map(x=>x[0]).join('').slice(0,2);
+const okPhoto=d=>typeof d.photo=='string'&&d.photo.indexOf('data:image/')==0;
+const avS=d=>okPhoto(d)?'<img class="avs" alt="" src="'+d.photo+'">':'<div class="avs">'+inis(d)+'</div>';
+const avL=d=>okPhoto(d)?'<img class="avs avl" alt="" src="'+d.photo+'">':'<div class="avs avl">'+inis(d)+'</div>';
+const statusLbl=d=>d.kind=='Intern'?'Intern • provisional registration verified':d.kind=='Volunteer'?'Volunteer • registration verified':'Licensed • registration verified';
+const achHtml=d=>(d.ach&&d.ach.length)?'<div class="name" style="margin-top:8px">Achievements</div>'+d.ach.map(x=>'<div class="info">🏆 '+esc(x)+'</div>').join(''):'';
+function joinAs(r){
+  if(r=='patient'){S('joined','patient');$('join').style.display='none';return}
+  if(r=='pro'){$('jmsg').innerHTML='<div class="card"><div class="name">Health professionals</div><div class="info">Which profile is yours? (Demo. Real accounts come with the shared database.)</div><select id="jd">'+D.map((d,i)=>'<option value="'+i+'">'+esc(d.name)+'</option>').join('')+'</select><button onclick="proGo()">Open my professional tools</button><div class="info">You appear to patients only after the admin approves your licence.</div></div><button class="g" onclick="joinAs(\'patient\')">Continue as a patient</button>';return}
+  $('jmsg').innerHTML='<div class="card"><div class="name">'+(r=='pharmacy'?'Pharmacies':'Hospitals')+'</div><div class="info">Sign-up for this is coming soon. Your profile, photos and products will be added after the admin verifies your registration.</div></div><button class="g" onclick="joinAs(\'patient\')">Continue as a patient</button>';
+}
+function proGo(){me.did=+$('jd').value;me.role='doctor';S('proMode',1);S('me',me);S('joined','pro');$('join').style.display='none';nav();go('req')}
+function switchRole(){me.role='patient';S('me',me);S('proMode',0);S('joined','');location.reload()}
+function aboutCard(d){
+  return '<div class="card"><div class="name">Public profile (patients see this)</div>'+(okPhoto(d)?'<img src="'+d.photo+'" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover">':'<div class="info">No photo yet</div>')+'<input id="pfile" type="file" accept="image/*" onchange="pickPhoto(this)"><textarea id="bio" rows="4" maxlength="400" placeholder="About you (max 400 characters)">'+esc(d.bio||'')+'</textarea><input id="edu" maxlength="120" placeholder="Education, for example MBChB, University of Zambia" value="'+esc(d.edu||'')+'"><button onclick="saveAbout()">Save profile details</button><div class="name" style="margin-top:12px">Achievements</div>'+(d.ach||[]).map((x,k)=>'<div class="info">🏆 '+esc(x)+' <a href="#" onclick="rmAch('+k+');return false">remove</a></div>').join('')+'<input id="ach" maxlength="120" placeholder="Add an achievement or award"><button class="g" onclick="addAch()">Add achievement</button><div class="info">Photos are shrunk to save data. The admin checks your documents.</div></div>';
+}
+function saveAbout(){const id=+me.did||0,d=D[id];d.bio=$('bio').value.trim().slice(0,400);d.edu=$('edu').value.trim().slice(0,120);saveProf(id);alert('Profile saved.')}
+function addAch(){const id=+me.did||0,d=D[id],t=$('ach').value.trim();if(!t)return;d.ach=d.ach||[];if(d.ach.length>=10){alert('Up to 10 items.');return}d.ach.push(t.slice(0,120));saveProf(id);showPf()}
+function rmAch(k){const id=+me.did||0;D[id].ach.splice(k,1);saveProf(id);showPf()}
+function pickPhoto(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;if(!/^image\//.test(f.type)){alert('Choose a photo.');return}
+  const id=+me.did||0,r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,256/Math.max(im.width,im.height));c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);D[id].photo=c.toDataURL('image/jpeg',0.7);saveProf(id);showPf()};im.src=r.result};
+  r.readAsDataURL(f);
+}
+function nav(){
+  const t=me.role=='admin'?[['ver','Verify'],['me','Me']]:me.role=='doctor'?[['req','Requests'],['me','Me']]:[['docs','Doctors'],['visits','Visits'],['rx','Pharmacy'],['hosp','Hospitals'],['me','Me']];
+  $('nav').innerHTML=t.map(x=>'<button id="n-'+x[0]+'" onclick="go(\''+x[0]+'\')">'+x[1]+'</button>').join('');
+}
+function go(t){
+  ['docs','visits','rx','hosp','req','hp','ver','prof','vend','me'].forEach(x=>{$('t-'+x).style.display=x==t?'block':'none';if($('n-'+x))$('n-'+x).className=x==t?'on':''});
+  if(t=='docs')showD();if(t=='visits')showV();if(t=='rx'){showRx();showPh()}if(t=='hosp')showH();if(t=='req')showQ();if(t=='me')fillMe();if(t=='hp')showHp();if(t=='ver')showVer();
+  window.scrollTo(0,0);
+}
+function stars(i){const a=reviews[i]||[];if(!a.length)return 'No reviews yet';return '★ '+(a.reduce((s,x)=>s+x.r,0)/a.length).toFixed(1)+' ('+a.length+' reviews)'}
+
+function waV(i){const a=appts[i];const t='Hello '+a.doc+', this is '+a.pat+' about my visit on '+a.date+' at '+a.time+'.';window.open('https://wa.me/'+wn(a.d)+'?text='+encodeURIComponent(t),'_blank')}
+function wa(i){const d=D[i];const t='Hello '+d.name+', I found you on ZedCare and would like a consultation.'+(me.name?' My name is '+me.name+'.':'');window.open('https://wa.me/'+wn(i)+'?text='+encodeURIComponent(t),'_blank')}
+function rv(i){
+  const e=$('rv'+i);if(e.innerHTML){e.innerHTML='';return}
+  const a=reviews[i]||[];
+  e.innerHTML=(a.length?a.map(x=>'<div class="info">'+'★'.repeat(x.r)+' '+esc(x.t)+'</div>').join(''):'<div class="info">No reviews yet</div>')+
+  '<select id="rs'+i+'"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select><input id="rt'+i+'" placeholder="Write a review"><button onclick="addRv('+i+')">Post review</button>';
+}
+function addRv(i){
+  if(!appts.some(a=>a.d==i&&a.st=='Done')){alert('You can review a doctor after your visit is marked done.');return}
+  const t=$('rt'+i).value.trim();if(!t){alert('Write a few words first.');return}
+  (reviews[i]=reviews[i]||[]).push({r:+$('rs'+i).value,t:t});S('reviews',reviews);showD();
+}
+function book(i){
+  sel=i;$('ft').textContent='Book '+D[i].name;$('pn').value=me.name;$('ph').value=me.phone;
+  $('dt').min=today();$('dt').value='';fillTm();$('sh').checked=false;$('bf').innerHTML='<option value="">Myself</option>'+people.map((x,k)=>'<option value="'+k+'">'+esc(x.n)+' ('+esc(x.r)+')</option>').join('');$('form').style.display='block';mm();window.scrollTo(0,0);
+}
+function mm(){
+  const c=$('pm').value=='Pay at clinic';$('mo').style.display=c?'none':'block';
+  $('cb').textContent=c?'Request booking':'Request and pay K'+D[sel].fee;
+}
+function confirmB(){
+  const n=$('pn').value.trim(),p=$('ph').value.trim(),dt=$('dt').value,tm=$('tm').value,m=$('pm').value,mo=$('mo').value.trim();
+  if(!n||!p||!dt){alert('Enter your name, phone and date.');return}
+  if(dt<today()){alert('Pick today or a later date.');return}
+  if(!tm){alert('No free time on that date. Pick another day.');return}
+  let hp='';
+  if($('sh').checked){const v=$('bf').value,x=v===''?null:people[+v];if(x&&(x.b||x.a))hp=(x.b?'Blood group '+x.b:'')+(x.b&&x.a?'. ':'')+(x.a?'Allergies: '+x.a:'');if(!hp){alert('Add blood group or allergies for this person in Health profile first, or untick sharing.');return}}
+  let paid=false;
+  if(m!='Pay at clinic'){
+    if(!mo){alert('Enter your mobile money number.');return}
+    if(!confirm('DEMO: a request for K'+D[sel].fee+' would go to '+mo+' ('+m+'). Approve?'))return;
+    paid=true;
+  }
+  appts.push({d:sel,doc:D[sel].name,pat:n,ph:p,date:dt,time:tm,m:m,paid:paid,fee:D[sel].fee,st:'Pending',hp:hp,id:Date.now().toString(36).toUpperCase()});
+  S('appts2',appts);
+  if(!me.name){me.name=n;me.phone=p;S('me',me)}
+  $('form').style.display='none';alert('Request sent. The doctor will accept or decline it.');go('visits');
+}
+function cal(a){
+  const s=a.date.replace(/-/g,'')+'T'+a.time.replace(':','')+'00';
+  const h=String(+a.time.slice(0,2)+1).padStart(2,'0');
+  const e=a.date.replace(/-/g,'')+'T'+h+a.time.slice(3,5)+'00';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('Doctor: '+a.doc)+'&dates='+s+'/'+e;
+}
+function showV(){
+  const r=appts.map((a,i)=>({...a,i}));
+  $('vl').innerHTML=r.length?r.map(a=>'<div class="card"><div class="name">'+a.doc+'</div><div class="info">'+a.date+' at '+a.time+'</div><div class="info">'+(a.paid?'Paid K'+a.fee+' via '+a.m:'Pay K'+a.fee+' at the clinic')+'</div><div class="'+(a.st=='Pending'?'warn':'info')+'">Status: '+a.st+(a.st=='Declined'?' (choose another time)':'')+'</div>'+(a.st=='Accepted'&&wn(a.d)?'<a class="btn w" href="tel:+'+wn(a.d)+'">Call doctor</a><button class="w" onclick="waV('+a.i+')">WhatsApp doctor</button>':'')+(a.st=='Accepted'&&!wn(a.d)?'<div class="info">The doctor has not added a phone number yet.</div>':'')+((a.st=='Pending'||a.st=='Accepted')&&!ok(D[a.d])?'<div class="warn">This doctor\'s licence is not valid right now. The visit may be cancelled.</div>':'')+(a.st=='Done'?'<button onclick="rcpt('+a.i+')">View receipt</button>':'')+(a.st=='Accepted'||a.st=='Pending'?'<a class="btn g" target="_blank" rel="noopener" href="'+cal(a)+'">Add to calendar</a><button class="r" onclick="cancelV('+a.i+')">Cancel visit</button>':'')+'</div>').join(''):'<p class="empty">No visits yet. Go to Doctors and book one.</p>';
+}
+function cancelV(i){if(confirm('Cancel this visit?')){appts.splice(i,1);S('appts2',appts);showV()}}
+
+function showQ(){showPf();showSt(+me.did||0);showAv();
+  const id=+me.did||0;
+  const r=appts.map((a,i)=>({...a,i})).filter(a=>a.d==id);
+  $('rq').innerHTML='<p class="info">Showing requests for '+D[id].name+'</p>'+(r.length?r.map(a=>'<div class="card"><div class="name">'+esc(a.pat)+'</div><div class="info">'+a.date+' at '+a.time+'</div><div class="info">'+(a.paid?'Paid K'+a.fee+' via '+a.m:'Pay K'+a.fee+' at the clinic')+'</div><div class="'+(a.st=='Pending'?'warn':'info')+'">Status: '+a.st+'</div>'+(a.hp?'<div class="info">Patient shared: '+esc(a.hp)+'</div>':'')+'<a class="btn g" href="tel:'+esc(a.ph)+'">Call patient</a>'+(a.st=='Pending'?'<div class="row"><button class="w" onclick="st('+a.i+',\'Accepted\')">Accept</button><button class="r" onclick="st('+a.i+',\'Declined\')">Decline</button></div>':'')+(a.st=='Accepted'?'<button onclick="st('+a.i+',\'Done\')">Mark visit done</button>':'')+'</div>').join(''):'<p class="empty">No requests yet.</p>');
+}
+function st(i,s){if(s=='Accepted'&&!ok(D[appts[i].d])){alert('Your licence is not valid, so you cannot accept bookings. Update your details first.');return}appts[i].st=s;S('appts2',appts);showQ()}
+
+function rxOk(x){const q=($('mq').value||'').toLowerCase(),c=$('mc').value;return(!c||x[2]==c)&&x[0].toLowerCase().includes(q)}
+let curV=+L('curV',0)||0,userPos=null;
+const vp=(v,i)=>RX[i][1]+((v*3+i)%4)*2;
+const vs=(v,i)=>{const k=(v*7+i)%5;return k==0?'Out of stock':k==1?'Low stock':'In stock'};
+function km(v){if(!userPos)return '';const t=x=>x*Math.PI/180,a=VENDORS[v],dl=t(a.lat-userPos.lat),dn=t(a.lng-userPos.lng),h=Math.sin(dl/2)**2+Math.cos(t(userPos.lat))*Math.cos(t(a.lat))*Math.sin(dn/2)**2;return (12742*Math.asin(Math.sqrt(h))).toFixed(1)+' km'}
+function vOpts(){$('vs').innerHTML=VENDORS.map((a,i)=>'<option value="'+i+'">'+esc(a.n)+' ('+esc(a.city)+(km(i)?', '+km(i):'')+')</option>').join('');$('vs').value=curV}
+function pickV(){curV=+$('vs').value;S('curV',curV);showRx()}
+function locate(){if(!navigator.geolocation){alert('Location is not available on this phone.');return}navigator.geolocation.getCurrentPosition(p=>{userPos={lat:p.coords.latitude,lng:p.coords.longitude};vOpts();showRx()},()=>alert('Location was not shared. You can still pick a pharmacy from the list.'))}
+function showVend(){const a=VENDORS[curV];$('vp').innerHTML='<div class="card"><div class="name">'+esc(a.n)+'</div><div class="info">'+esc(a.city)+', '+esc(a.prov)+' Province'+(km(curV)?' • '+km(curV)+' away':'')+'</div><div class="info">Hours: '+esc(a.hours)+'</div><div class="info">ZAMRA registration: '+esc(a.lic)+'</div><div class="info">Sample pharmacy for the demo. Real pharmacies must be verified with ZAMRA before listing.</div><button class="g" onclick="openVendor('+curV+')">View profile, products and map</button></div>'}
+const kmN=v=>{const t=x=>x*Math.PI/180,a=VENDORS[v],dl=t(a.lat-userPos.lat),dn=t(a.lng-userPos.lng),h=Math.sin(dl/2)**2+Math.cos(t(userPos.lat))*Math.cos(t(a.lat))*Math.sin(dn/2)**2;return 12742*Math.asin(Math.sqrt(h))};
+let srt='price',mapOn=false;
+function setSrt(v){srt=v;showRl()}
+function showCmp(){
+  $('vp').innerHTML='';
+  let rows=[];
+  RX.forEach((x,i)=>{if(rxOk(x))VENDORS.forEach((a,v)=>rows.push({i:i,v:v,p:vp(v,i),s:vs(v,i),d:userPos?kmN(v):0}))});
+  const near=srt=='near'&&userPos;
+  rows.sort((a,b)=>((a.s=='Out of stock')-(b.s=='Out of stock'))||(near?a.d-b.d:a.p-b.p)||(a.p-b.p));
+  const total=rows.length;rows=rows.slice(0,24);
+  $('rl').innerHTML='<div class="chips"><button class="chip'+(srt=='price'?' on':'')+'" onclick="setSrt(\'price\')">Cheapest</button><button class="chip'+(srt=='near'?' on':'')+'" onclick="setSrt(\'near\')">Nearest</button></div>'+(srt=='near'&&!userPos?'<div class="info">Tap "Use my location for distances" to sort by nearest.</div>':'')+(rows.length?rows.map(o=>{const x=RX[o.i],a=VENDORS[o.v];return '<div class="card"><div class="name">'+x[0]+'</div><div class="info">'+esc(a.n)+' • '+esc(a.city)+(userPos?' • '+o.d.toFixed(1)+' km':'')+'</div><div class="fee">K'+o.p+'</div><div class="'+(o.s=='In stock'?'info':'warn')+'">'+o.s+'</div><div class="row">'+(o.s=='Out of stock'?'':'<button onclick="addFrom('+o.i+','+o.v+')">Add to cart</button>')+'<button class="g" onclick="openVendor('+o.v+')">View pharmacy</button></div></div>'}).join('')+'<div class="info">Prices and stock are samples.</div>':'<p class="empty">No items match.</p>');
+}
+function addFrom(i,v){curV=v;S('curV',curV);vOpts();add(i,1)}
+function openVendor(v){curV=v;S('curV',v);mapOn=false;vOpts();go('vend');showVendP(v)}
+function showMap(){mapOn=true;showVendP(curV)}
+function showVendP(v){
+  const a=VENDORS[v],ini=a.n.replace('Sample ','').split(' ').map(x=>x[0]).join('').slice(0,2);
+  const map=mapOn?'<iframe title="Map" style="width:100%;height:220px;border:0;border-radius:8px" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox='+(a.lng-0.01)+','+(a.lat-0.007)+','+(a.lng+0.01)+','+(a.lat+0.007)+'&layer=mapnik&marker='+a.lat+','+a.lng+'"></iframe><a class="btn g" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat='+a.lat+'&mlon='+a.lng+'#map=16/'+a.lat+'/'+a.lng+'">Open larger map</a>':'<button class="g" onclick="showMap()">Show map (uses data)</button>';
+  $('vd').innerHTML='<div class="card"><div class="av">'+ini+'</div><div class="name">'+esc(a.n)+'<span class="vb">✓</span></div><div class="info">'+esc(a.addr)+'</div><div class="info">'+esc(a.city)+', '+esc(a.prov)+' Province'+(km(v)?' • '+km(v)+' away':'')+'</div><div class="info">Hours: '+esc(a.hours)+'</div><div class="info">ZAMRA registration: '+esc(a.lic)+'</div></div><div class="card"><div class="name">Location</div>'+map+'<div class="info">Sample location for the demo.</div></div><h2>Products and prices</h2>'+RX.map((x,i)=>{const s=vs(v,i);return '<div class="card"><div class="name">'+x[0]+'</div><div class="info">'+x[2]+(x[3]?' • Prescription needed':'')+'</div><div class="fee">K'+vp(v,i)+'</div><div class="'+(s=='In stock'?'info':'warn')+'">'+s+'</div>'+(s=='Out of stock'?'':'<button onclick="addFrom('+i+','+v+')">Add to cart</button>')+'</div>'}).join('')+'<button class="w" onclick="go(\'rx\')">Go to cart</button><div class="info">Sample pharmacy. Real pharmacies would add their own photo, address and products.</div>';
+}
+function showRl(){
+  if($('mq').value.trim().length>=2){showCmp();return}
+  showVend();
+  const r=RX.map((x,i)=>({x,i})).filter(o=>rxOk(o.x)),a=VENDORS[curV];
+  $('rl').innerHTML=r.length?r.map(o=>{const s=vs(curV,o.i);return '<div class="card"><div class="name">'+o.x[0]+'</div><div class="info">'+o.x[2]+(o.x[3]?' • Prescription needed':'')+'</div><div class="info">'+esc(a.n)+(km(curV)?' • '+km(curV):'')+'</div><div class="fee">K'+vp(curV,o.i)+'</div><div class="'+(s=='In stock'?'info':'warn')+'">'+s+'</div>'+(s=='Out of stock'?'':'<button onclick="add('+o.i+',1)">Add to cart</button>')+'</div>'}).join(''):'<p class="empty">No items match.</p>';
+}
+function showCart(){
+  const k=Object.keys(cart).filter(i=>cart[i]>0),a=VENDORS[curV];let tot=0,bad=0;
+  $('cl').innerHTML=k.length?k.map(i=>{const s=vs(curV,i);if(s=='Out of stock')bad++;tot+=vp(curV,i)*cart[i];return '<div class="card"><div class="info">'+RX[i][0]+' × '+cart[i]+' - K'+vp(curV,i)+' each</div>'+(RX[i][3]?'<div class="warn">Bring the original prescription</div>':'')+(s=='Out of stock'?'<div class="warn">Out of stock here</div>':'')+'<button class="g" onclick="add('+i+',-1)">Remove one</button></div>'}).join('')+'<div class="fee">Total: K'+tot+'</div><div class="info">Order goes to '+esc(a.n)+'. Pay the pharmacy directly.</div>'+(bad?'<div class="warn">Remove out-of-stock items or choose another pharmacy.</div>':'<button class="w" onclick="orderWA()">Order on WhatsApp</button>'):'<p class="empty">Your cart is empty.</p>';
+}
+function showRx(){showRl();showCart()}
+function showPh(){
+  const p=$('pvp').value,r=PHARMS.filter(x=>!p||x.prov==p);
+  $('phl').innerHTML=r.length?r.map(x=>'<div class="card"><div class="name">'+esc(x.n)+'</div><div class="info">'+esc(x.city)+', '+esc(x.prov)+' Province</div>'+(x.phone?'<a class="btn" href="tel:'+esc(x.phone)+'">Call</a>':'')+'<a class="btn g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(x.n+', '+x.city+', Zambia')+'">Open in Maps</a></div>').join(''):'<p class="empty">None saved for this province yet. Use the search button above.</p>';
+}
+function nearPh(){
+  const p=$('pvp').value,d=$('pdd').value.trim(),pl=d||(p?CAP[p]:'');
+  if(!pl){alert('Choose a province or type a district or town.');return}
+  window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('pharmacies in '+pl+', '+(p?p+' Province, ':'')+'Zambia'),'_blank');
+}
+function add(i,d){
+  if(d>0&&RX[i][3]&&!(cart[i]>0)&&!confirm('This item needs a valid prescription from a doctor. Do you have one? The pharmacy checks the original before giving you the item.'))return;
+  cart[i]=Math.max(0,(cart[i]||0)+d);S('cart',cart);showCart();
+}
+function orderWA(){
+  const k=Object.keys(cart).filter(i=>cart[i]>0);if(!k.length)return;const a=VENDORS[curV];
+  const t='Hello '+a.n+', I would like to order:\n'+k.map(i=>RX[i][0]+' x '+cart[i]).join('\n')+(k.some(i=>RX[i][3])?'\nI will bring the original prescription.':'')+(me.name?'\nName: '+me.name:'')+(me.phone?'\nPhone: '+me.phone:'');
+  window.open('https://wa.me/'+(a.wa||'')+'?text='+encodeURIComponent(t),'_blank');
+}
+
+function showH(){
+  const p=$('prov').value;const r=H.filter(h=>!p||h[2]==p);
+  $('hl').innerHTML=r.length?r.map(h=>'<div class="card"><div class="name">'+h[0]+'</div><div class="info">'+h[3]+' • '+h[1]+', '+h[2]+' Province</div><a class="btn g" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(h[0]+', '+h[1]+', Zambia')+'">Open in Maps</a></div>').join(''):'<p class="empty">None saved for this province yet. Use the search button above.</p>';
+}
+function near(){
+  const p=$('prov').value,d=$('dist').value.trim(),pl=d||(p?CAP[p]:'');
+  if(!pl){alert('Choose a province or type a district or town.');return}
+  window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent('hospitals and clinics in '+pl+', '+(p?p+' Province, ':'')+'Zambia'),'_blank');
+}
+
+function fillMe(){$('mn').value=me.name;$('mp').value=me.phone;$('role').value=me.role;$('did').value=me.did;$('mw').value=waMap[me.did]||'';roleUI()}
+function roleUI(){const v=$('role').value=='doctor'?'block':'none';$('did').style.display=v;$('mw').style.display=v}
+function saveMe(){
+  me={name:$('mn').value.trim(),phone:$('mp').value.trim(),role:$('role').value,did:+$('did').value};
+  if(me.role=='doctor'){const x=$('mw').value.replace(/\D/g,'').replace(/^0/,'260');if(x)waMap[me.did]=x;else delete waMap[me.did];S('wa',waMap)}
+  S('me',me);nav();go(me.role=='admin'?'ver':me.role=='doctor'?'req':'docs');
+}
+function clearAll(){
+  if(!confirm('Delete bookings, reviews, cart and profile from this phone?'))return;
+  ['appts2','reviews','cart','me','wa','people','emerg','avail','prof','demo','joined','proMode'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});location.reload();
+}
+function sos(){const p=$('sp2'),e=$('ec');p.style.display=p.style.display=='block'?'none':'block';if(emerg.p){e.style.display='block';e.href='tel:'+emerg.p;e.textContent='Call my contact'+(emerg.n?': '+emerg.n:'')}else e.style.display='none'}
+
+$('sp').innerHTML='<option value="">All specialties</option>'+uniq(D.map(d=>d.spec)).map(x=>'<option>'+x+'</option>').join('');
+$('ct').innerHTML='<option value="">All cities</option>'+uniq(D.map(d=>d.city)).map(x=>'<option>'+x+'</option>').join('');
+$('did').innerHTML=D.map((d,i)=>'<option value="'+i+'">'+d.name+'</option>').join('');
+$('mc').innerHTML='<option value="">All categories</option>'+uniq(RX.map(x=>x[2])).map(x=>'<option>'+x+'</option>').join('');$('pvp').innerHTML='<option value="">All provinces</option>'+Object.keys(CAP).map(x=>'<option>'+x+'</option>').join('');vOpts();$('mq').value='';$('mq').addEventListener('input',showRl);$('mc').onchange=showRl;$('join').style.display=L('joined','')?'none':'block';$('dt').onchange=fillTm;$('q').value='';$('q').addEventListener('input',showD);$('sp').onchange=showD;$('ct').onchange=showD;
+if(!L('demo',0)&&!(L('proMode',0)&&me.role=='doctor')&&me.role!='patient'){me.role='patient';S('me',me)}$('demo').style.display=L('demo',0)?'block':'none';chips();showD();nav();go(me.role=='admin'?'ver':me.role=='doctor'?'req':'docs');
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}
+</script>
+</body></html>
