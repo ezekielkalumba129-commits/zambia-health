@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>ZedCare Admin</title>
+<link rel="manifest" href="/pro.webmanifest"><meta name="theme-color" content="#0E3B43">
+<style>
+body{font-family:system-ui,Arial,sans-serif;background:#eef2f5;margin:0;padding:16px 16px 60px;color:#16232e}
+h1{font-size:22px;margin:4px 0 12px}h2{font-size:18px;margin:20px 0 8px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #c9d3db;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:10px;background:#fff}
+.card{background:#fff;padding:14px 16px;border-radius:10px;margin-bottom:10px;border:1px solid #dde5ea}
+.name{font-size:17px;font-weight:700;margin-bottom:4px}.info{color:#4b5d6b;font-size:14px;margin:3px 0}
+.warn{color:#b45309;font-weight:700;font-size:14px;margin:4px 0}.big{font-size:22px;font-weight:700}
+button,.btn{text-align:center;text-decoration:none;box-sizing:border-box;display:block;background:#0E3B43;color:#fff;border:0;padding:12px;border-radius:8px;font-size:16px;width:100%;margin-top:8px}
+.g{background:#6b7c8a}.r{background:#c62828}.w{background:#1f9d55}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px}
+.chip{flex:none;width:auto;margin:0;padding:8px 14px;border-radius:999px;background:#fff;color:#16232e;border:1px solid #c9d3db;font-size:14px}
+.chip.on{background:#0E3B43;color:#fff;border-color:#0E3B43}
+.kp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.kp .card{margin:0}
+.tr{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin:6px 0}
+.empty{text-align:center;color:#6b7c8a}
+</style></head><body>
+<div id="lock"><h1>ZedCare Admin</h1><p class="info">For the admin only.</p>
+<div class="card"><div class="name">Admin</div><input id="code" type="password" placeholder="Admin code"><button onclick="unlock()">Open admin</button></div>
+<p class="info">Demo only. These codes are not real security.</p></div>
+<div id="app" style="display:none"><h1>ZedCare Admin</h1><div id="tabs" class="chips"></div><div id="v"></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const L=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const S=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const K=n=>'K'+Math.round(n).toLocaleString('en-US');
+const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>fmt(new Date());
+const D=[
+{name:'Dr. Mwansa Banda',spec:'General Practitioner',city:'Lusaka',place:'University Teaching Hospital, Lusaka',kind:'Working',lic:'SAMPLE-001',exp:'2027-03-31',status:'Verified'},
+{name:'Dr. Chanda Phiri',spec:'Pediatrician',city:'Ndola',place:'Ndola Teaching Hospital',kind:'Working',lic:'SAMPLE-002',exp:'2027-06-30',status:'Verified'},
+{name:'Dr. Mutale Zulu',spec:'Dentist',city:'Kitwe',place:'Kitwe Teaching Hospital',kind:'Intern',lic:'SAMPLE-003',exp:'2027-01-31',status:'Verified'},
+{name:'Dr. Namukolo Tembo',spec:'Gynecologist',city:'Lusaka',place:'Levy Mwanawasa University Teaching Hospital',kind:'Volunteer',lic:'SAMPLE-004',exp:'2027-09-30',status:'Verified'},
+{name:'Dr. Bwalya Mulenga',spec:'Dermatologist',city:'Livingstone',place:'Livingstone University Teaching Hospital',kind:'Working',lic:'SAMPLE-005',exp:'2025-12-31',status:'Verified'}
+];
+let appts=L('appts2',[]),reviews=L('reviews',{}),prof=L('prof',{}),comm=L('comm',10),log=L('alog',[]),cur='ov',bf='';
+Object.keys(prof).forEach(i=>{if(D[i])Object.assign(D[i],prof[i])});
+const ok=d=>d.status=='Verified'&&d.exp>=today();
+const dl=d=>Math.ceil((new Date(d.exp+'T00:00')-new Date(today()+'T00:00'))/864e5);
+const gross=()=>appts.filter(a=>a.st=='Done').reduce((t,a)=>t+a.fee,0);
+const stamp=()=>new Date().toISOString().slice(0,16).replace('T',' ');
+const T=[['ov','Overview'],['dr','Doctors'],['bk','Bookings'],['in','Income'],['rv','Reviews'],['ad','Adverts'],['ad','Ads'],['st','Settings']];
+let role=sessionStorage.getItem('prole')||'';
+function unlock(){if($('code').value!=='zedcare-admin'){alert('Wrong code');return}role='admin';sessionStorage.setItem('prole',role);openApp()}
+function openApp(){$('lock').style.display='none';$('app').style.display='block';go('ov')}
+function tabs(){$('tabs').innerHTML=T.map(t=>'<button class="chip'+(cur==t[0]?' on':'')+'" onclick="go(\''+t[0]+'\')">'+t[1]+'</button>').join('')}
+function go(t){cur=t;tabs();({ov:ov,dr:dr,bk:bk,in:inc,rv:rv,ad:adm,st:sett,ad:adsTab})[t]();window.scrollTo(0,0)}
+function ov(){
+  const dc=s=>D.filter(d=>d.status==s).length,exp=D.filter(d=>d.status=='Verified'&&d.exp<today()).length,soon=D.filter(d=>d.status=='Verified'&&d.exp>=today()&&dl(d)<=30).length;
+  const c=s=>appts.filter(a=>a.st==s).length,pts=new Set(appts.map(a=>(a.pat+'|'+a.ph).toLowerCase())).size;
+  const g=gross(),all=[].concat(...Object.values(reviews)),avg=all.length?(all.reduce((t,x)=>t+x.r,0)/all.length).toFixed(1):'-';
+  const k=(a,b,c)=>'<div class="card"><div class="info">'+a+'</div><div class="big">'+b+'</div>'+(c?'<div class="info">'+c+'</div>':'')+'</div>';
+  $('v').innerHTML='<div class="kp">'+k('Doctors',D.length,(dc('Verified')-exp)+' live • '+dc('Pending')+' pending')+k('Licences',exp+' expired',soon+' expire within 30 days')+k('Patients',pts)+k('Bookings',appts.length,c('Pending')+' pending • '+c('Accepted')+' accepted')+k('Completed visits',c('Done'),c('Declined')+' declined')+k('Gross fees',K(g),'completed visits')+k('Platform revenue',K(g*comm/100),comm+'% commission')+k('Average rating',avg,all.length+' reviews')+'</div><div class="info">Demo numbers from this phone only. No real money moves.</div>';
+}
+function dr(){
+  const o={Pending:0,Verified:1};
+  const r=D.map((d,i)=>({d:d,i:i})).sort((a,b)=>((o[a.d.status]??2)-(o[b.d.status]??2))||a.d.exp.localeCompare(b.d.exp));
+  $('v').innerHTML=r.map(p=>{const d=p.d,i=p.i;
+    const x=d.exp<today()?'<div class="warn">Licence expired '+d.exp+'</div>':dl(d)<=30?'<div class="warn">Licence expires in '+dl(d)+' days ('+d.exp+')</div>':'<div class="info">Licence valid until '+d.exp+'</div>';
+    return '<div class="card"><div class="name">'+esc(d.name)+'</div><div class="info">'+esc(d.spec)+' • '+esc(d.city)+'</div><div class="info">Works at: '+esc(d.place)+' ('+esc(d.kind)+')</div><div class="info">Licence no. '+esc(d.lic)+' • Documents ticked: '+((d.docs||[]).length||3)+' of 3</div>'+x+'<div class="'+(d.status=='Pending'?'warn':'info')+'">Status: '+d.status+(ok(d)?' (visible to patients)':' (hidden from patients)')+'</div>'+(d.status=='Pending'?'<div class="row"><button class="w" onclick="act('+i+',\'Verified\')">Approve</button><button class="r" onclick="act('+i+',\'Rejected\')">Reject</button></div>':d.status=='Verified'?'<button class="r" onclick="act('+i+',\'Suspended\')">Suspend</button>':'<button onclick="act('+i+',\'Verified\')">Re-approve</button>')+'</div>';
+  }).join('')+'<h2>Activity log</h2>'+(log.length?log.slice(-15).reverse().map(l=>'<div class="info">'+esc(l)+'</div>').join(''):'<div class="info">No actions yet.</div>');
+}
+function act(i,v){
+  if(!confirm(v+' '+D[i].name+'?'))return;
+  D[i].status=v;prof[i]=Object.assign({},prof[i]||{},{status:v});S('prof',prof);
+  log.push(stamp()+' - '+v+': '+D[i].name);S('alog',log);dr();
+}
+function bk(){
+  const r=appts.filter(a=>!bf||a.st==bf).slice().reverse();
+  $('v').innerHTML='<select onchange="bf=this.value;bk()"><option value="">All statuses</option>'+['Pending','Accepted','Done','Declined'].map(s=>'<option'+(bf==s?' selected':'')+'>'+s+'</option>').join('')+'</select><button class="g" onclick="csv()">Download bookings (CSV)</button>'+(r.length?r.map(a=>'<div class="card"><div class="name">'+esc(a.doc)+'</div><div class="info">Patient: '+esc(a.pat)+' ('+esc(a.ph)+')</div><div class="info">'+esc(a.date)+' at '+esc(a.time)+'</div><div class="info">'+(a.paid?'Paid '+K(a.fee)+' via '+esc(a.m):K(a.fee)+' at the clinic')+'</div><div class="'+(a.st=='Pending'?'warn':'info')+'">'+a.st+'</div></div>').join(''):'<p class="empty">No bookings yet.</p>');
+}
+function csvText(){
+  const q=v=>{v=String(v==null?'':v);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+  return ['Doctor','Patient','Phone','Date','Time','Fee','Payment','Status'].map(q).join(',')+'\n'+appts.map(a=>[a.doc,a.pat,a.ph,a.date,a.time,a.fee,a.paid?'Paid via '+a.m:'At clinic',a.st].map(q).join(',')).join('\n');
+}
+function csv(){
+  const u=URL.createObjectURL(new Blob([csvText()],{type:'text/csv'})),a=document.createElement('a');
+  a.href=u;a.download='zedcare-bookings.csv';a.click();
+}
+function inc(){
+  const d=appts.filter(a=>a.st=='Done'),g=d.reduce((t,a)=>t+a.fee,0),on=d.filter(a=>a.paid).reduce((t,a)=>t+a.fee,0),cm=g*comm/100,by={},mo={};
+  d.forEach(a=>{const b=by[a.doc]=by[a.doc]||{n:0,g:0};b.n++;b.g+=a.fee;const m=a.date.slice(0,7);mo[m]=(mo[m]||0)+a.fee});
+  const row=(a,b)=>'<div class="tr"><span>'+a+'</span><b>'+b+'</b></div>';
+  $('v').innerHTML='<div class="card"><div class="name">Summary</div>'+row('Completed visits',d.length)+row('Gross fees',K(g))+row('Collected online (MoMo or Airtel)',K(on))+row('Collected at clinics',K(g-on))+row('Commission ('+comm+'%)',K(cm))+row('Owed to doctors',K(g-cm))+'</div><div class="card"><div class="name">By doctor</div>'+(Object.keys(by).length?Object.keys(by).map(k=>row(esc(k)+' ('+by[k].n+')',K(by[k].g)+' • payout '+K(by[k].g*(100-comm)/100))).join(''):'<div class="info">No completed visits yet.</div>')+'</div><div class="card"><div class="name">By month</div>'+(Object.keys(mo).length?Object.keys(mo).sort().map(k=>row(k,K(mo[k]))).join(''):'<div class="info">Nothing yet.</div>')+'</div><div class="info">Demo only. No real money moves and no payout is sent.</div>';
+}
+function rv(){
+  const out=[];Object.keys(reviews).forEach(i=>(reviews[i]||[]).forEach((x,k)=>out.push({i:i,k:k,x:x})));
+  $('v').innerHTML=out.length?out.map(o=>'<div class="card"><div class="name">'+esc(D[o.i].name)+'</div><div class="info">'+'★'.repeat(o.x.r)+' '+esc(o.x.t)+'</div><button class="r" onclick="rmRv('+o.i+','+o.k+')">Remove review</button></div>').join(''):'<p class="empty">No reviews yet.</p>';
+}
+function rmRv(i,k){
+  if(!confirm('Remove this review?'))return;
+  reviews[i].splice(k,1);S('reviews',reviews);log.push(stamp()+' - Removed a review for '+D[i].name);S('alog',log);rv();
+}
+function sett(){
+  $('v').innerHTML=(role=='admin'?'<div class="card"><div class="name">Commission</div><input id="cm" type="number" min="0" max="100" value="'+comm+'"><button onclick="saveCm()">Save commission</button></div>':'')+'<div class="card"><div class="name">Security</div><div class="info">This page is hidden, not secret. Real protection needs accounts and a server that checks the admin role. Never link to this page from the app.</div><button class="g" onclick="lock()">Lock</button></div>';
+}
+function saveCm(){const v=+$('cm').value;if(!(v>=0&&v<=100)){alert('Enter 0 to 100.');return}comm=v;S('comm',v);alert('Saved.')}
+let ads=L('ads',[]),astats=L('adstats',{}),draftImg='';
+const okU=u=>/^https?:\/\//i.test(u||'');
+function adm(){
+  const t=today();draftImg='';
+  $('v').innerHTML='<div class="card"><div class="name">New advert</div><input id="at" maxlength="80" placeholder="Headline (shown to users)"><input id="aa" maxlength="60" placeholder="Advertiser name"><input id="au" type="url" placeholder="Link, starting with https://"><select id="ap"><option value="all">Show everywhere</option><option value="docs">Doctors screen</option><option value="rx">Pharmacy screen</option></select><div class="info">Start date</div><input id="af" type="date" value="'+t+'"><div class="info">End date</div><input id="ae" type="date"><input id="ai" type="file" accept="image/*" onchange="adImg(this)"><div id="aprev"></div><label class="info" style="display:block"><input type="checkbox" id="ac" style="width:auto;margin:0 6px 0 0">This advert follows the rules: no false health claims, and medicine adverts are approved.</label><button onclick="adSave()">Save advert</button><div class="info">Adverts show as "Sponsored". They are never targeted using health information.</div></div><h2>Your adverts</h2>'+(ads.length?ads.map((a,i)=>{const s=astats[a.id]||{v:0,c:0},live=a.on&&a.from<=t&&t<=a.to;return '<div class="card">'+(a.img?'<img src="'+a.img+'" alt="" style="width:100%;border-radius:8px">':'')+'<div class="name">'+esc(a.t)+'</div><div class="info">'+esc(a.adv)+' • '+(a.place=='all'?'Everywhere':a.place=='docs'?'Doctors screen':'Pharmacy screen')+'</div><div class="info">'+esc(a.from)+' to '+esc(a.to)+'</div><div class="'+(live?'info':'warn')+'">'+(live?'Live now':!a.on?'Paused':a.to<t?'Ended':'Not started')+'</div><div class="info">Seen '+s.v+' times • Tapped '+s.c+' times'+(s.v?' ('+(100*s.c/s.v).toFixed(1)+'%)':'')+'</div><div class="row"><button class="g" onclick="adTog('+i+')">'+(a.on?'Pause':'Resume')+'</button><button class="r" onclick="adDel('+i+')">Delete</button></div></div>'}).join(''):'<p class="empty">No adverts yet.</p>');
+}
+function adImg(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;if(!/^image\//.test(f.type)){alert('Choose a picture.');return}
+  const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,600/Math.max(im.width,im.height));c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);draftImg=c.toDataURL('image/jpeg',0.7);$('aprev').innerHTML='<img src="'+draftImg+'" alt="" style="width:100%;border-radius:8px">'};im.src=r.result};
+  r.readAsDataURL(f);
+}
+function adSave(){
+  const t=$('at').value.trim(),adv=$('aa').value.trim(),u=$('au').value.trim(),f=$('af').value,e=$('ae').value;
+  if(!t||!adv||!f||!e){alert('Fill in the headline, advertiser and both dates.');return}
+  if(!okU(u)){alert('The link must start with http:// or https://');return}
+  if(e<f){alert('The end date is before the start date.');return}
+  if(!$('ac').checked){alert('Please confirm the advert follows the rules.');return}
+  if(ads.length>=20){alert('Up to 20 adverts. Delete an old one first.');return}
+  ads.push({id:Date.now().toString(36),t:t,adv:adv,url:u,img:draftImg,place:$('ap').value,from:f,to:e,on:true});
+  try{localStorage.setItem('ads',JSON.stringify(ads))}catch(x){ads.pop();alert('Not enough space. Use a smaller picture or delete an advert.');return}
+  log.push(stamp()+' - Added advert: '+t);S('alog',log);alert('Advert saved.');adm();
+}
+function adTog(i){ads[i].on=!ads[i].on;S('ads',ads);log.push(stamp()+' - '+(ads[i].on?'Resumed':'Paused')+' advert: '+ads[i].t);S('alog',log);adm()}
+function adDel(i){if(!confirm('Delete this advert?'))return;const a=ads.splice(i,1)[0];S('ads',ads);log.push(stamp()+' - Deleted advert: '+a.t);S('alog',log);adm()}
+let adL=L('ads',[]),adPic='';
+const adSt=a=>!a.on?'Off':today()<a.start?'Scheduled':today()>a.end?'Ended':'Live';
+function adsTab(){
+  $('v').innerHTML='<div class="card"><div class="name">New advert</div><input id="adt" maxlength="60" placeholder="Title (max 60)"><input id="adl" placeholder="Link, starting https:// (optional)"><div class="info">Picture (shrunk to save data)</div><input id="adf" type="file" accept="image/*" onchange="adImg(this)"><div id="adp"></div><div class="info">Start date</div><input id="adb" type="date" value="'+today()+'"><div class="info">End date</div><input id="ade" type="date"><button onclick="addAd()">Save advert</button><div class="info">Adverts show as Sponsored. Never target them using health data. Medicine adverts may need approval from ZAMRA.</div></div><h2>Your adverts</h2>'+(adL.length?adL.map((a,i)=>'<div class="card"><div class="name">'+esc(a.title)+'</div><div class="'+(adSt(a)=='Live'?'info':'warn')+'">'+adSt(a)+' • '+a.start+' to '+a.end+'</div><img src="'+a.img+'" alt="" style="width:100%;border-radius:8px"><div class="row"><button class="g" onclick="togAd('+i+')">'+(a.on?'Switch off':'Switch on')+'</button><button class="r" onclick="delAd('+i+')">Delete</button></div></div>').join(''):'<p class="empty">No adverts yet.</p>');
+  adPic='';
+}
+function adImg(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;if(!/^image\//.test(f.type)){alert('Choose a picture.');return}
+  const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,600/im.width);c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);adPic=c.toDataURL('image/jpeg',0.7);$('adp').innerHTML='<img src="'+adPic+'" alt="" style="width:100%;border-radius:8px">'};im.src=r.result};
+  r.readAsDataURL(f);
+}
+function addAd(){
+  const t=$('adt').value.trim(),l=$('adl').value.trim(),b=$('adb').value,e=$('ade').value;
+  if(!t){alert('Add a title.');return}if(!adPic){alert('Add a picture.');return}
+  if(l&&!/^https:\/\//.test(l)){alert('The link must start with https://');return}
+  if(!b||!e||e<b){alert('Choose a start date and an end date after it.');return}
+  adL.push({id:Date.now(),title:t.slice(0,60),link:l,img:adPic,start:b,end:e,on:true});S('ads',adL);
+  log.push(stamp()+' - Added advert: '+t);S('alog',log);adsTab();
+}
+function togAd(i){adL[i].on=!adL[i].on;S('ads',adL);log.push(stamp()+' - '+(adL[i].on?'Switched on':'Switched off')+' advert: '+adL[i].title);S('alog',log);adsTab()}
+function delAd(i){if(!confirm('Delete this advert?'))return;log.push(stamp()+' - Deleted advert: '+adL[i].title);adL.splice(i,1);S('ads',adL);S('alog',log);adsTab()}
+function lock(){sessionStorage.removeItem('prole');location.reload()}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}
+if(role)openApp();
+</script></body></html>
